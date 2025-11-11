@@ -1,4 +1,4 @@
-# CISC498-Ausomo-Robotics
+# CISC498-Ausomo-Robotics-UDelivery
 Indoor delivery robot for Ausomo Robotics made by gang
 
 ## Project Overview
