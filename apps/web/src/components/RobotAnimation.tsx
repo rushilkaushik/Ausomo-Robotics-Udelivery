@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { Package, Battery, Wifi, Home, ArrowUp, Clock } from 'lucide-react';
+import { DeliveryStatus } from '../lib/types';
 
 interface RobotAnimationProps {
-  status: 'moving' | 'loading' | 'delivering' | 'idle';
+  status: DeliveryStatus;
   batteryLevel: number;
   progress: number;
   currentStep: number;
@@ -16,7 +17,7 @@ export function RobotAnimation({ status, batteryLevel, progress, currentStep, cu
       return 'loading'; // At reception loading
     } else if (currentLocation.includes('Elevator') || currentStep === 3) {
       return 'elevator'; // In elevator
-    } else if (currentStep === 4 || status === 'delivering') {
+    } else if (currentStep === 4 || status === 'in-transit') {
       return 'door'; // At recipient's door
     } else {
       return 'hallway'; // Moving through hallway

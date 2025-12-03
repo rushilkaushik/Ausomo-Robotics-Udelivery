@@ -1,20 +1,8 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 import { Package, MapPin, Clock, ChevronRight } from "lucide-react";
 import { motion } from 'framer-motion';
-
-interface Delivery {
-  id: string;
-  packageId: string;
-  robotId: string;
-  recipientName: string;
-  destination: string;
-  buildingName: string;
-  status: 'pending' | 'in-transit' | 'delivered' | 'delayed';
-  estimatedDelivery: string;
-  progress: number;
-}
+import { Delivery, DeliveryStatus } from '../lib/types';
 
 interface UserDeliverySelectorProps {
   deliveries: Delivery[];
@@ -22,24 +10,32 @@ interface UserDeliverySelectorProps {
   onSelectDelivery: (deliveryId: string) => void;
 }
 
-const statusColors = {
+const statusColors: Record<DeliveryStatus, string> = {
   'pending': 'bg-gray-500',
+  'assigned': 'bg-gray-500',
+  'picked-up': 'bg-blue-500',
   'in-transit': 'bg-blue-500',
+  'arrived': 'bg-green-500',
   'delivered': 'bg-green-500',
-  'delayed': 'bg-red-500'
+  'failed': 'bg-red-500',
+  'cancelled': 'bg-red-500'
 };
 
-const statusLabels = {
+const statusLabels: Record<DeliveryStatus, string> = {
   'pending': 'Pending',
+  'assigned': 'Assigned',
+  'picked-up': 'Picked Up',
   'in-transit': 'In Transit',
+  'arrived': 'Arrived',
   'delivered': 'Delivered',
-  'delayed': 'Delayed'
+  'failed': 'Failed',
+  'cancelled': 'Cancelled'
 };
 
-export function UserDeliverySelector({ 
-  deliveries, 
-  selectedDeliveryId, 
-  onSelectDelivery 
+export function UserDeliverySelector({
+  deliveries,
+  selectedDeliveryId,
+  onSelectDelivery
 }: UserDeliverySelectorProps) {
   return (
     <div className="space-y-3">
@@ -47,7 +43,7 @@ export function UserDeliverySelector({
         <h3>My Deliveries</h3>
         <Badge variant="secondary">{deliveries.length}</Badge>
       </div>
-      
+
       <div className="space-y-2 px-4">
         {deliveries.map((delivery, index) => (
           <motion.div
@@ -56,64 +52,70 @@ export function UserDeliverySelector({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <Card 
+            <Card
               className={`p-4 cursor-pointer transition-all ${
-                selectedDeliveryId === delivery.id 
-                  ? 'ring-2 ring-blue-500 bg-blue-50' 
+                selectedDeliveryId === delivery.id
+                  ? 'ring-2 ring-blue-500 bg-blue-50'
                   : 'hover:shadow-md'
               }`}
               onClick={() => onSelectDelivery(delivery.id)}
             >
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  delivery.status === 'in-transit' ? 'bg-blue-100' :
-                  delivery.status === 'delivered' ? 'bg-green-100' :
-                  delivery.status === 'delayed' ? 'bg-red-100' :
+                  delivery.status === 'in-transit' || delivery.status === 'picked-up' ? 'bg-blue-100' :
+                  delivery.status === 'delivered' || delivery.status === 'arrived' ? 'bg-green-100' :
+                  delivery.status === 'failed' || delivery.status === 'cancelled' ? 'bg-red-100' :
                   'bg-gray-100'
                 }`}>
                   <Package className={`h-5 w-5 ${
-                    delivery.status === 'in-transit' ? 'text-blue-600' :
-                    delivery.status === 'delivered' ? 'text-green-600' :
-                    delivery.status === 'delayed' ? 'text-red-600' :
+                    delivery.status === 'in-transit' || delivery.status === 'picked-up' ? 'text-blue-600' :
+                    delivery.status === 'delivered' || delivery.status === 'arrived' ? 'text-green-600' :
+                    delivery.status === 'failed' || delivery.status === 'cancelled' ? 'text-red-600' :
                     'text-gray-600'
                   }`} />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className="text-sm font-mono">{delivery.id}</p>
-                      <p className="text-xs text-muted-foreground">{delivery.packageId}</p>
+                      <p className="text-sm font-mono font-semibold">{delivery.delivery_code}</p>
+                      <p className="text-xs text-muted-foreground">ID: {delivery.id.slice(0, 8)}</p>
                     </div>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className={`${statusColors[delivery.status]} text-white text-xs`}
                     >
                       {statusLabels[delivery.status]}
                     </Badge>
                   </div>
-                  
+
                   <div className="space-y-1 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{delivery.destination} • {delivery.buildingName}</span>
+                      <span className="truncate">
+                        {delivery.dropoff_anchor_point_id || 'Destination pending'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-3 w-3 flex-shrink-0" />
-                      <span>ETA: {delivery.estimatedDelivery}</span>
+                      <span>
+                        ETA: {delivery.estimated_delivery_time
+                          ? new Date(delivery.estimated_delivery_time).toLocaleTimeString()
+                          : 'Calculating...'}
+                      </span>
                     </div>
                   </div>
 
-                  {delivery.status === 'in-transit' && (
+                  {(delivery.status === 'in-transit' || delivery.status === 'picked-up') && (
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                         <span>Progress</span>
-                        <span>{Math.round(delivery.progress)}%</span>
+                        <span>{Math.round(delivery.progress_percentage)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div 
+                        <div
                           className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                          style={{ width: `${delivery.progress}%` }}
+                          style={{ width: `${delivery.progress_percentage}%` }}
                         />
                       </div>
                     </div>
