@@ -1,4 +1,4 @@
-# CISC498-Ausomo-Robotics-UDelivery
+# Ausomo-Robotics-UDelivery
 Indoor delivery robot for Ausomo Robotics made by gang
 
 ## Project Overview
@@ -44,8 +44,8 @@ Learn more about project structure and setup in the sections below.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/rushilkaushik/CISC498-Ausomo-Robotics.git
-   cd CISC498-Ausomo-Robotics
+   git clone https://github.com/rushilkaushik/Ausomo-Robotics-UDelivery.git
+   cd Ausomo-Robotics-UDelivery
    ```
 
 2. **Navigate to the web application directory:**
