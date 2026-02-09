@@ -30,15 +30,15 @@ This project is an indoor delivery robot tracking platform developed for Ausomo 
 Learn more about project structure and setup in the sections below.
 
 
-## Repository layout
+## Repository Layout
 
 - `apps/` – User-facing applications, including:
-  - `web/` – Web application frontend (React, TypeScript, components, styles)
+  - `web/` – Web application frontend (React, TypeScript, Tailwind CSS)
   - `ios/` – iOS mobile frontend
   - `android/` – Android mobile frontend
 - `services/` – Backend services (REST APIs, workers, order management, map data handling)
 - `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
-- `infra/` – Infrastructure setup (docker-compose files, database configuration, deployment scripts)
+- `infra/` – Infrastructure and configuration (environment variables, docker-compose files, deployment scripts)
 
 ## How to Run the Web App
 
@@ -48,30 +48,44 @@ Learn more about project structure and setup in the sections below.
    cd Ausomo-Robotics-UDelivery
    ```
 
-2. **Navigate to the web application directory:**
+2. **Set up environment variables:**
    ```bash
-   cd apps/web
+   cp infra/.env.example infra/.env
    ```
+   Then edit `infra/.env` with your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_KEY=your_supabase_anon_key
+   ```
+   You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
 3. **Install dependencies:**
    ```bash
-   npm install
+   npm run install:web
    ```
 
-4. **Build the app:**
-   ```bash
-   npm run build
-   ```
-
-5. **Preview the built app locally:**
-   ```bash
-   npm run preview
-   ```
-   _or_, if you want to run the development server (with hot reload):
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
    _Tip_: While the dev server is running, you can type `o` and hit Enter in the terminal to automatically open the web app in your browser.
+
+5. **Build for production:**
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
+## Available Scripts
+
+All commands are run from the project root:
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run install:web` | Install web app dependencies |
 
 ## Plans
 
