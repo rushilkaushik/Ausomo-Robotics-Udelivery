@@ -54,4 +54,5 @@ Thumbs.db
 
 # Misc
 /temp
+.cursor/
 
