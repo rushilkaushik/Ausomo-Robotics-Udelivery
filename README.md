@@ -30,15 +30,15 @@ This project is an indoor delivery robot tracking platform developed for Ausomo 
 Learn more about project structure and setup in the sections below.
 
 
-## Repository layout
+## Repository Layout
 
-- `apps/` – User-facing applications, including:
-  - `web/` – Web application frontend (React, TypeScript, components, styles)
+- `apps/` – User-facing applications:
+  - `web/` – Web application frontend (React, TypeScript, Tailwind CSS)
   - `ios/` – iOS mobile frontend
   - `android/` – Android mobile frontend
 - `services/` – Backend services (REST APIs, workers, order management, map data handling)
 - `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
-- `infra/` – Infrastructure setup (docker-compose files, database configuration, deployment scripts)
+- `infra/` – Infrastructure and configuration (environment variables, docker-compose files, deployment scripts)
 
 ## How to Run the Web App
 
@@ -48,37 +48,85 @@ Learn more about project structure and setup in the sections below.
    cd Ausomo-Robotics-UDelivery
    ```
 
-2. **Navigate to the web application directory:**
+2. **Set up environment variables:**
    ```bash
-   cd apps/web
+   cp infra/.env.example infra/.env
    ```
+   Then edit `infra/.env` with your Supabase credentials:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_KEY=your_supabase_anon_key
+   ```
+   You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
 3. **Install dependencies:**
    ```bash
-   npm install
+   npm run install:web
    ```
 
-4. **Build the app:**
-   ```bash
-   npm run build
-   ```
-
-5. **Preview the built app locally:**
-   ```bash
-   npm run preview
-   ```
-   _or_, if you want to run the development server (with hot reload):
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
    _Tip_: While the dev server is running, you can type `o` and hit Enter in the terminal to automatically open the web app in your browser.
 
-## Plans
+5. **Build for production:**
+   ```bash
+   npm run build
+   npm run preview
+   ```
 
-- **Database Connectivity**: Integrate backend services (`services/`) with a centralized database for storing building maps, tracking orders, robot state, and user information. This ensures real-time access and updates for the apps, as well as persistent storage.
-- **Robot Communication**: Enable backend services to establish reliable connections with robot units (via ROS2 APIs), to send commands and receive telemetry and status updates.
-- **Linking Everything Together**: Use `docker-compose` within the `infra/` directory to orchestrate all components (frontend, backend, robot simulators, and databases). This will streamline the process of running the entire system locally or in production, ensuring that all services can communicate seamlessly in a reproducible environment.
-- **Future improvements**:
-  - Automated deployment pipelines for rapid testing and delivery
-  - Scalable microservices structure for increased robustness
-  - Enhanced security across communications between all system parts
+## Available Scripts
+
+All commands are run from the project root:
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run install:web` | Install web app dependencies |
+
+## TODO
+
+### 1. Fix Row Level Security (RLS) Bugs
+- [ ] **Admin Dashboard Data Visibility** — Admins currently cannot view user order data in the admin dashboard
+- [ ] Review and update Supabase RLS policies to allow admin role to read all orders
+- [ ] Test that regular users can still only see their own orders
+- [ ] Verify admin can see aggregated delivery data across all users
+
+### 2. Docker Compose Setup
+- [ ] Create `docker-compose.yml` in `infra/` directory
+- [ ] Containerize the web application
+- [ ] Add database service configuration
+- [ ] Add environment variable management for containers
+
+**Why Docker benefits this project:**
+- **Consistent environments** — Eliminates "works on my machine" issues; every developer and deployment runs the same setup
+- **Easy onboarding** — New team members can run `docker-compose up` instead of manually installing dependencies
+- **Microservices ready** — As we add backend services and robot simulators, Docker makes it easy to orchestrate multiple services
+- **Production parity** — Local development mirrors production, reducing deployment surprises
+- **Isolation** — Each service runs in its own container, preventing dependency conflicts
+
+### 3. Production Deployment
+- [ ] Choose hosting platform (Vercel, Netlify, AWS, DigitalOcean, etc.)
+- [ ] Configure custom domain and SSL certificate
+- [ ] Set up production environment variables securely
+- [ ] Configure CI/CD pipeline for automated deployments
+- [ ] Set up monitoring and error tracking
+
+### 4. Robot Integration
+- [ ] **Simulated Robot** — Set up ROS2 simulation environment (Gazebo) for testing
+- [ ] **Physical Robot** — Establish communication protocol with Ausomo robot hardware
+- [ ] Implement WebSocket or MQTT connection between web app and robot
+- [ ] Add real-time robot position updates to the tracking interface
+- [ ] Create robot command API (start delivery, return to base, etc.)
+
+---
+
+## Future Improvements
+
+- Automated deployment pipelines for rapid testing and delivery
+- Scalable microservices structure for increased robustness
+- Enhanced security across communications between all system parts
+- Mobile apps (iOS/Android) for on-the-go tracking
