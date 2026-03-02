@@ -14,11 +14,35 @@ interface SignUpProps {
 }
 
 
-async function castNametoId(buildingName:string): Promise<string>{
-  const {data: buildingId, error: err} = await supabase.from('buildings').select('id').eq('name', buildingName).single()
+async function resolveBuildingId(buildingInput: string): Promise<string | null> {
+  const input = buildingInput.trim();
+  if (!input) {
+    return null;
+  }
 
-  if (err) throw err
-  return buildingId.id
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (uuidPattern.test(input)) {
+    const { data: byId, error: byIdError } = await supabase
+      .from('buildings')
+      .select('id')
+      .eq('id', input)
+      .maybeSingle();
+
+    if (byIdError) throw byIdError;
+    if (byId) return byId.id;
+  }
+
+  const { data: byName, error: byNameError } = await supabase
+    .from('buildings')
+    .select('id')
+    .eq('name', input)
+    .maybeSingle();
+
+  if (byNameError) throw byNameError;
+  if (byName) return byName.id;
+
+  throw new Error('Building not found. Leave it blank if unknown.');
 }
 export function SignUp({ onBackToLogin }: SignUpProps) {
   const [formData, setFormData] = useState({
@@ -56,15 +80,15 @@ export function SignUp({ onBackToLogin }: SignUpProps) {
 
     setLoading(true);
     setError("");
-    const id = await castNametoId(formData.buildingId)
     try {
+      const id = await resolveBuildingId(formData.buildingId);
+
       // Call signUpNewUser from auth.ts - creates auth user AND profile record
       await signUpNewUser(
         formData.email,
         formData.password,
         {
           full_name: formData.fullName,
-          role: 'user',
           building_id: id
         }
       );

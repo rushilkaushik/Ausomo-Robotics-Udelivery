@@ -5,28 +5,32 @@ import { AuthUser, Delivery, Robot, AnchorPoint } from './types'
 
 export async function signUpNewUser(email:string, password:string, userData: {
     full_name: string,
-    role: string,
-    building_id: string
+    building_id: string | null
 }) {
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
     })
     if (authError) throw authError
+    if (!authData.user) {
+      throw new Error('Signup completed but no user was returned.')
+    }
 
-    // Update the profile that was created by the trigger
-    const {data: updateData, error: profileError} = await supabase
+    // Ensure profile exists and can be fetched immediately after signup.
+    const { error: profileError } = await supabase
     .from('profiles')
-    .update({
+    .upsert({
+      id: authData.user.id,
+      email: authData.user.email ?? email,
       full_name: userData.full_name,
-      role: userData.role,
+      role: 'user',
       building_id: userData.building_id
-    })
-    .eq('id', authData.user!.id)
-    .select()
+    }, { onConflict: 'id' })
 
-    console.log('Update result:', updateData, profileError)
-    if (profileError) throw profileError
+    if (profileError) {
+      // Auth user is created; profile will be retried on first login.
+      console.warn('Profile setup after signup failed:', profileError.message)
+    }
     return authData
 }
 
@@ -94,7 +98,7 @@ export async function getAdminBuildingDeliveries(user: AuthUser): Promise<Delive
 }
 
 export async function getRobotsForbuilding(buildingId: string): Promise<Robot[] | null> {
-  const {data: robots, error: fetchError} = await supabase.from('robots').select('*').eq('[building_id', buildingId)
+  const {data: robots, error: fetchError} = await supabase.from('robots').select('*').eq('building_id', buildingId)
   if (fetchError) throw fetchError
   return robots
 }

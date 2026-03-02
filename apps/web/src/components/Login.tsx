@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -18,13 +18,45 @@ export function Login({ onShowSignUp }: LoginProps = {}) {
   const [credentials, setCredentials] = useState({ email: '', password: '', deliveryId: '' });
   const { signIn, guestMode } = useAuth()
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const emailRef = useRef<HTMLInputElement | null>(null)
+  const passwordRef = useRef<HTMLInputElement | null>(null)
 
-  async function handleAccountLogin() {
+  function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Login timed out. Please try again.'))
+      }, timeoutMs)
+
+      promise
+        .then((result) => {
+          clearTimeout(timeoutId)
+          resolve(result)
+        })
+        .catch((err) => {
+          clearTimeout(timeoutId)
+          reject(err)
+        })
+    })
+  }
+
+  async function handleAccountLogin(inputEmail?: string, inputPassword?: string) {
+    const email = (inputEmail ?? emailRef.current?.value ?? credentials.email).trim()
+    const password = inputPassword ?? passwordRef.current?.value ?? credentials.password
+
+    if (!email || !password) {
+      setError('Please enter your email and password')
+      return
+    }
+
+    setSubmitting(true)
     try {
-      await signIn(credentials.email, credentials.password)
+      await withTimeout(signIn(email, password), 15000)
     } catch (err) {
       console.log(err)
       setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setSubmitting(false)
     }
   };
 
@@ -70,50 +102,60 @@ export function Login({ onShowSignUp }: LoginProps = {}) {
                 <TabsTrigger value="delivery">Track Delivery</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="account" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      className="pl-10"
-                      value={credentials.email}
-                      onChange={(e) => {
-                        setCredentials({ ...credentials, email: e.target.value });
-                        setError('');
-                      }}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAccountLogin()}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      className="pl-10"
-                      value={credentials.password}
-                      onChange={(e) => {
-                        setCredentials({ ...credentials, password: e.target.value });
-                        setError('');
-                      }}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAccountLogin()}
-                    />
-                  </div>
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={handleAccountLogin}
-                  disabled={!credentials.email || !credentials.password}
+              <TabsContent value="account">
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    handleAccountLogin()
+                  }}
                 >
-                  Login
-                </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        className="pl-10"
+                        autoComplete="email"
+                        value={credentials.email}
+                        onChange={(e) => {
+                          setCredentials({ ...credentials, email: e.target.value });
+                          setError('');
+                        }}
+                        ref={emailRef}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        className="pl-10"
+                        autoComplete="current-password"
+                        value={credentials.password}
+                        onChange={(e) => {
+                          setCredentials({ ...credentials, password: e.target.value });
+                          setError('');
+                        }}
+                        ref={passwordRef}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    type="submit"
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Logging in...' : 'Login'}
+                  </Button>
+                </form>
 
                 {onShowSignUp && (
                   <p className="text-xs text-center text-muted-foreground pt-4">

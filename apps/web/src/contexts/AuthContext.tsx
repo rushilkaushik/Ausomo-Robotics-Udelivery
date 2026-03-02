@@ -17,29 +17,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetchUserProfile(session.user.id)
+  async function syncUserFromSession(userId: string, email?: string | null) {
+    try {
+      await fetchUserProfile(userId)
+    } catch (profileError) {
+      if (email) {
+        await ensureProfileForUser(userId, email)
+        await fetchUserProfile(userId)
       } else {
+        throw profileError
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let isMounted = true
+    const loadingSafetyTimeout = setTimeout(() => {
+      if (isMounted) {
         setLoading(false)
       }
-    })
+    }, 8000)
+
+    // Check active session on mount
+    ;(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+
+        if (session) {
+          try {
+            await syncUserFromSession(session.user.id, session.user.email)
+          } catch (profileError) {
+            setUser(null)
+            setLoading(false)
+          }
+        } else {
+          setUser(null)
+          setLoading(false)
+        }
+      } catch (sessionError) {
+        setUser(null)
+        setLoading(false)
+      } finally {
+        if (!isMounted) return
+      }
+    })()
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return
+
       if (session) {
-        fetchUserProfile(session.user.id)
+        if (event === 'SIGNED_IN') {
+          setLoading(true)
+        }
+        // Do not await Supabase queries directly in auth callback.
+        setTimeout(() => {
+          if (!isMounted) return
+          void syncUserFromSession(session.user.id, session.user.email).catch(() => {
+            if (event === 'SIGNED_IN') {
+              setUser(null)
+            }
+            setLoading(false)
+          })
+        }, 0)
       } else {
         setUser(null)
         setLoading(false)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      clearTimeout(loadingSafetyTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchUserProfile(userId: string) {
@@ -49,20 +105,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
 
-    if (!error && data) {
-      setUser(data)
+    if (error) {
+      throw error
     }
-    setLoading(false)
+    if (!data) {
+      throw new Error('Profile not found')
+    }
+
+    setUser(data)
+  }
+
+  async function ensureProfileForUser(userId: string, email: string) {
+    const fallbackName = email.includes('@') ? email.split('@')[0] : 'User'
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email,
+        full_name: fallbackName,
+        role: 'user',
+        building_id: null,
+      }, { onConflict: 'id' })
+
+    if (error) {
+      throw error
+    }
   }
 
   async function signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) throw error
-    await fetchUserProfile(data.user.id)
   }
 
   async function signOut() {
