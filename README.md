@@ -1,9 +1,10 @@
 # Ausomo-Robotics-UDelivery
+
 Indoor delivery robot for Ausomo Robotics made by gang
 
 ## Project Overview
 
-This project is an indoor delivery robot tracking platform developed for Ausomo Robotics. It provides a full-stack solution to manage, track, and interact with delivery robots operating inside buildings such as office complexes, hospitals, or university campuses. 
+This project is an indoor delivery robot tracking platform developed for Ausomo Robotics. It provides a full-stack solution to manage, track, and interact with delivery robots operating inside buildings such as office complexes, hospitals, or university campuses.
 
 ### Key Features
 
@@ -29,7 +30,6 @@ This project is an indoor delivery robot tracking platform developed for Ausomo 
 
 Learn more about project structure and setup in the sections below.
 
-
 ## Repository Layout
 
 - `apps/` – User-facing applications:
@@ -43,34 +43,43 @@ Learn more about project structure and setup in the sections below.
 ## How to Run the Web App
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/rushilkaushik/Ausomo-Robotics-UDelivery.git
    cd Ausomo-Robotics-UDelivery
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    cp infra/.env.example infra/.env
    ```
+
    Then edit `infra/.env` with your Supabase credentials:
+
    ```env
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
+
    You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
 3. **Install dependencies:**
+
    ```bash
    npm run install:web
    ```
 
 4. **Run the development server:**
+
    ```bash
    npm run dev
    ```
+
    _Tip_: While the dev server is running, you can type `o` and hit Enter in the terminal to automatically open the web app in your browser.
 
 5. **Build for production:**
+
    ```bash
    npm run build
    npm run preview
@@ -81,7 +90,7 @@ Learn more about project structure and setup in the sections below.
 All commands are run from the project root:
 
 | Command | Description |
-|---------|-------------|
+| ------- | ----------- |
 | `npm run dev` | Start development server with hot reload |
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build locally |
@@ -90,18 +99,21 @@ All commands are run from the project root:
 ## TODO
 
 ### 1. Fix Row Level Security (RLS) Bugs
+
 - [ ] **Admin Dashboard Data Visibility** — Admins currently cannot view user order data in the admin dashboard
 - [ ] Review and update Supabase RLS policies to allow admin role to read all orders
 - [ ] Test that regular users can still only see their own orders
 - [ ] Verify admin can see aggregated delivery data across all users
 
 ### 2. Docker Compose Setup
+
 - [ ] Create `docker-compose.yml` in `infra/` directory
 - [ ] Containerize the web application
 - [ ] Add database service configuration
 - [ ] Add environment variable management for containers
 
 **Why Docker benefits this project:**
+
 - **Consistent environments** — Eliminates "works on my machine" issues; every developer and deployment runs the same setup
 - **Easy onboarding** — New team members can run `docker-compose up` instead of manually installing dependencies
 - **Microservices ready** — As we add backend services and robot simulators, Docker makes it easy to orchestrate multiple services
@@ -109,6 +121,7 @@ All commands are run from the project root:
 - **Isolation** — Each service runs in its own container, preventing dependency conflicts
 
 ### 3. Production Deployment
+
 - [ ] Choose hosting platform (Vercel, Netlify, AWS, DigitalOcean, etc.)
 - [ ] Configure custom domain and SSL certificate
 - [ ] Set up production environment variables securely
@@ -116,6 +129,7 @@ All commands are run from the project root:
 - [ ] Set up monitoring and error tracking
 
 ### 4. Robot Integration
+
 - [ ] **Simulated Robot** — Set up ROS2 simulation environment (Gazebo) for testing
 - [ ] **Physical Robot** — Establish communication protocol with Ausomo robot hardware
 - [ ] Implement WebSocket or MQTT connection between web app and robot
