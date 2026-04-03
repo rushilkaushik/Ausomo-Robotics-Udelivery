@@ -1,0 +1,23 @@
+anchor_points:
+  - name: Entrance
+    type: entrance
+    x: 12
+    y: 44
+    z: 0
+
+  - name: Reception
+    type: reception
+    x: 30
+    y: 15
+
+  - name: Elevator A
+    type: elevator
+    x: 50
+    y: 70
+
+  - name: Charging Station 1
+    type: charging_station
+    x: 5
+    y: 90
+    z: 0
+
