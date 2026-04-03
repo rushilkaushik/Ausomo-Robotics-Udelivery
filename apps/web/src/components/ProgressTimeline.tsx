@@ -1,116 +1,144 @@
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Check, Clock, MapPin, Home, Building } from "lucide-react";
+import { Check, Clock, Package, Truck, MapPin, Home } from 'lucide-react'
+import { motion } from 'framer-motion'
+import type { DeliveryWithDetails } from '../lib/types'
+import { format } from 'date-fns'
 
 interface TimelineStep {
-  id: string;
-  title: string;
-  description: string;
-  status: 'completed' | 'current' | 'pending';
-  timestamp?: string;
-  icon: React.ReactNode;
+  label: string
+  description: string
+  timestamp: string | null
+  status: 'completed' | 'current' | 'pending'
 }
 
 interface ProgressTimelineProps {
-  currentStep: number;
+  currentStep: number
+  delivery: DeliveryWithDetails
 }
 
-export function ProgressTimeline({ currentStep }: ProgressTimelineProps) {
+function fmtTs(ts: string | null): string | null {
+  if (!ts) return null
+  return format(new Date(ts), 'MMM d, h:mm a')
+}
+
+export function ProgressTimeline({ currentStep, delivery }: ProgressTimelineProps) {
+  const pickup  = delivery.pickup_point_name  ?? 'Pickup'
+  const dropoff = delivery.dropoff_point_name ?? 'Destination'
+
   const steps: TimelineStep[] = [
     {
-      id: '1',
-      title: 'Package Received',
-      description: 'Package collected at reception desk',
-      status: currentStep >= 1 ? 'completed' : 'pending',
-      timestamp: currentStep >= 1 ? '2:30 PM' : undefined,
-      icon: <Building className="h-4 w-4" />
+      label:       'Pending',
+      description: 'Delivery request created',
+      timestamp:   fmtTs(delivery.created_at),
+      status:      currentStep >= 1 ? 'completed' : 'current',
     },
     {
-      id: '2',
-      title: 'Journey Started',
-      description: 'Robot departed from reception',
-      status: currentStep >= 2 ? 'completed' : currentStep === 1 ? 'current' : 'pending',
-      timestamp: currentStep >= 2 ? '2:32 PM' : undefined,
-      icon: <MapPin className="h-4 w-4" />
+      label:       'Assigned',
+      description: delivery.robot_name ? `Robot: ${delivery.robot_name}` : 'Awaiting robot assignment',
+      timestamp:   null,
+      status:      currentStep >= 2 ? 'completed' : currentStep === 1 ? 'current' : 'pending',
     },
     {
-      id: '3',
-      title: 'Elevator Access',
-      description: 'Robot accessing elevator to floor 5',
-      status: currentStep >= 3 ? 'completed' : currentStep === 2 ? 'current' : 'pending',
-      timestamp: currentStep >= 3 ? '2:35 PM' : undefined,
-      icon: <Building className="h-4 w-4" />
+      label:       'Picked Up',
+      description: `Collected at ${pickup}`,
+      timestamp:   fmtTs(delivery.picked_up_at),
+      status:      currentStep >= 3 ? 'completed' : currentStep === 2 ? 'current' : 'pending',
     },
     {
-      id: '4',
-      title: 'En Route to Destination',
-      description: 'Navigating to Apt 5B',
-      status: currentStep >= 4 ? 'completed' : currentStep === 3 ? 'current' : 'pending',
-      timestamp: currentStep >= 4 ? '2:38 PM' : undefined,
-      icon: <MapPin className="h-4 w-4" />
+      label:       'In Transit',
+      description: `En route to ${dropoff}`,
+      timestamp:   fmtTs(delivery.in_transit_at),
+      status:      currentStep >= 4 ? 'completed' : currentStep === 3 ? 'current' : 'pending',
     },
     {
-      id: '5',
-      title: 'Delivery Complete',
-      description: 'Package delivered to recipient',
-      status: currentStep >= 5 ? 'completed' : currentStep === 4 ? 'current' : 'pending',
-      timestamp: currentStep >= 5 ? '2:42 PM' : undefined,
-      icon: <Home className="h-4 w-4" />
-    }
-  ];
-
-  const getStepIcon = (step: TimelineStep) => {
-    if (step.status === 'completed') {
-      return <Check className="h-4 w-4 text-white" />;
-    } else if (step.status === 'current') {
-      return <Clock className="h-4 w-4 text-blue-600" />;
-    }
-    return step.icon;
-  };
-
-  const getStepStyles = (step: TimelineStep) => {
-    if (step.status === 'completed') {
-      return 'bg-green-500 border-green-500';
-    } else if (step.status === 'current') {
-      return 'bg-blue-50 border-blue-500 border-2';
-    }
-    return 'bg-gray-100 border-gray-300';
-  };
+      label:       'Arrived',
+      description: `At ${dropoff}`,
+      timestamp:   fmtTs(delivery.arrived_at),
+      status:      currentStep >= 5 ? 'completed' : currentStep === 4 ? 'current' : 'pending',
+    },
+    {
+      label:       'Delivered',
+      description: 'Package successfully delivered',
+      timestamp:   fmtTs(delivery.delivered_at),
+      status:      currentStep >= 6 ? 'completed' : currentStep === 5 ? 'current' : 'pending',
+    },
+  ]
 
   return (
-    <Card className="p-6">
-      <h3 className="mb-6">Delivery Progress</h3>
-      <div className="space-y-6">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-start gap-4">
-            {/* Timeline line and icon */}
-            <div className="flex flex-col items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border ${getStepStyles(step)}`}>
-                {getStepIcon(step)}
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`w-0.5 h-8 mt-2 ${step.status === 'completed' ? 'bg-green-500' : 'bg-gray-200'}`} />
-              )}
-            </div>
-            
-            {/* Step content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h4 className={step.status === 'current' ? 'text-blue-600' : ''}>{step.title}</h4>
-                {step.status === 'current' && (
-                  <Badge variant="outline" className="border-blue-500 text-blue-600">
-                    Current
-                  </Badge>
+    <div className="space-y-0">
+      {steps.map((step, i) => {
+        const isLast = i === steps.length - 1
+        return (
+          <motion.div
+            key={step.label}
+            className="flex gap-3"
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05, duration: 0.2 }}
+          >
+            {/* Spine */}
+            <div className="flex flex-col items-center w-6 flex-shrink-0">
+              {/* Dot */}
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 z-10 ${
+                step.status === 'completed'
+                  ? 'bg-green-500 border-green-500'
+                  : step.status === 'current'
+                  ? 'bg-white border-blue-500'
+                  : 'bg-white border-slate-200'
+              }`}>
+                {step.status === 'completed' ? (
+                  <Check className="h-3 w-3 text-white" />
+                ) : step.status === 'current' ? (
+                  <motion.span
+                    className="w-2 h-2 rounded-full bg-blue-500 block"
+                    animate={{ scale: [1, 1.4, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                  />
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-200 block" />
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">{step.description}</p>
-              {step.timestamp && (
-                <p className="text-xs text-muted-foreground mt-1">{step.timestamp}</p>
+              {/* Connector line */}
+              {!isLast && (
+                <div className={`w-0.5 flex-1 min-h-[20px] mt-0.5 ${
+                  step.status === 'completed' ? 'bg-green-300' : 'bg-slate-100'
+                }`} />
               )}
             </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
+
+            {/* Content */}
+            <div className={`flex-1 pb-4 ${isLast ? 'pb-0' : ''}`}>
+              <div className="flex items-baseline justify-between gap-2 pt-0.5">
+                <p className={`text-[13px] font-semibold leading-none ${
+                  step.status === 'current'
+                    ? 'text-blue-600'
+                    : step.status === 'completed'
+                    ? 'text-slate-800'
+                    : 'text-slate-400'
+                }`}>
+                  {step.label}
+                </p>
+                {step.timestamp && (
+                  <p className="text-[11px] text-slate-400 whitespace-nowrap">{step.timestamp}</p>
+                )}
+              </div>
+              <p className={`text-[12px] mt-0.5 ${
+                step.status === 'pending' ? 'text-slate-300' : 'text-slate-500'
+              }`}>
+                {step.description}
+              </p>
+              {step.status === 'current' && (
+                <motion.p
+                  className="text-[11px] text-blue-400 mt-1"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  In progress…
+                </motion.p>
+              )}
+            </div>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
 }

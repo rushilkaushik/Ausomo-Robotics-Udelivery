@@ -105,3 +105,13 @@ export interface Delivery {
   updated_at: string
 }
 
+// Enriched delivery — UUIDs resolved to human-readable names
+export interface DeliveryWithDetails extends Delivery {
+  building_name: string | null
+  floor_name: string | null
+  pickup_point_name: string | null
+  dropoff_point_name: string | null
+  robot_name: string | null
+  robot_status: RobotStatus | null
+}
+

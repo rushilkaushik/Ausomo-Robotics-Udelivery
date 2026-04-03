@@ -94,7 +94,7 @@ export async function getAdminBuildingDeliveries(user: AuthUser): Promise<Delive
 }
 
 export async function getRobotsForbuilding(buildingId: string): Promise<Robot[] | null> {
-  const {data: robots, error: fetchError} = await supabase.from('robots').select('*').eq('[building_id', buildingId)
+  const {data: robots, error: fetchError} = await supabase.from('robots').select('*').eq('building_id', buildingId)
   if (fetchError) throw fetchError
   return robots
 }
