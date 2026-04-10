@@ -18,15 +18,19 @@ import {
 import { motion } from 'framer-motion';
 import { supabase } from "../lib/supabaseClient";
 import type { Delivery, Robot } from "../lib/types";
+import { AdminAssignRobotButton } from "./AdminAssignRobotButton";
+import { AdminCancelDeliveryButton } from "./AdminCancelDeliveryButton";
+import { AdminDispatchRobotButton } from "./AdminDispatchRobotButton";
 
 interface AdminDashboardProps {
   buildingName: string;
+  buildingId: string;
   robots: Robot[];
   deliveries: Delivery[];
   onLogout: () => void;
 }
 
-export function AdminDashboard({ buildingName, robots, deliveries, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ buildingName, buildingId, robots, deliveries, onLogout }: AdminDashboardProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
   const [destinationNames, setDestinationNames] = useState<Record<string, string>>({});
@@ -149,7 +153,12 @@ export function AdminDashboard({ buildingName, robots, deliveries, onLogout }: A
                 <Building className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <h1 className="text-xl">{buildingName}</h1>
+                <div className="flex items-baseline gap-2">
+                  <h1 className="text-xl">{buildingName}</h1>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {buildingId}
+                  </span>
+                </div>
                 <p className="text-sm text-muted-foreground">Administrator Dashboard</p>
               </div>
             </div>
@@ -444,6 +453,21 @@ export function AdminDashboard({ buildingName, robots, deliveries, onLogout }: A
                         transition={{ duration: 0.5 }}
                       />
                     </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 mt-4">
+                    <AdminAssignRobotButton
+                      delivery={delivery}
+                      robots={robots}
+                    />
+                    <AdminDispatchRobotButton
+                      delivery={delivery}
+                      recipientName={delivery.user_id ? recipientNames[delivery.user_id] || "Unknown recipient" : "Guest / unknown"}
+                    />
+                    <AdminCancelDeliveryButton
+                      delivery={delivery}
+                      recipientName={delivery.user_id ? recipientNames[delivery.user_id] || "Unknown recipient" : "Guest / unknown"}
+                    />
                   </div>
                 </Card>
               </motion.div>
