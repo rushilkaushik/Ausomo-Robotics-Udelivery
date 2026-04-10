@@ -5,6 +5,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { UserDashboard } from "./components/UserDashboard";
 import { useAuth } from './contexts/AuthContext';
 import { getAdminBuildingDeliveries, getRobotsForbuilding } from "./lib/auth";
+import { supabase } from "./lib/supabaseClient";
 
 export default function App() {
   // Authentication state
@@ -16,6 +17,7 @@ export default function App() {
   // Admin data state
   const [buildingDeliveries, setBuildingDeliveries] = useState<any[] | null>(null);
   const [buildingRobots, setBuildingRobots] = useState<any[] | null>(null);
+  const [adminBuildingName, setAdminBuildingName] = useState<string>("Unknown Building");
 
   // Fetch admin data when user is admin
   useEffect(() => {
@@ -24,8 +26,16 @@ export default function App() {
     const fetchAdminData = async () => {
       const deliveries = await getAdminBuildingDeliveries(user);
       const robots = await getRobotsForbuilding(user.building_id!);
+
+      const { data: building } = await supabase
+        .from("buildings")
+        .select("name")
+        .eq("id", user.building_id)
+        .single();
+
       setBuildingDeliveries(deliveries || []);
       setBuildingRobots(robots || []);
+      setAdminBuildingName(building?.name || "Unknown Building");
     };
 
     fetchAdminData();
@@ -50,11 +60,10 @@ export default function App() {
 
   // Show admin dashboard for admin users
   if (user.role === "admin") {
-    const buildingName = user.building_id || "Unknown Building";
-
     return (
       <AdminDashboard
-        buildingName={buildingName}
+        buildingName={adminBuildingName}
+        buildingId={user.building_id || "Unknown building ID"}
         robots={buildingRobots || []}
         deliveries={buildingDeliveries || []}
         onLogout={signOut}
