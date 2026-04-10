@@ -37,8 +37,9 @@ Learn more about project structure and setup in the sections below.
   - `ios/` – iOS mobile frontend
   - `android/` – Android mobile frontend
 - `services/` – Backend services (REST APIs, workers, order management, map data handling)
+  - `gateway/` – Node.js gateway service; local runtime config lives in `services/gateway/.env` using `services/gateway/.env.example` as the template
 - `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
-- `infra/` – Infrastructure setup (docker-compose files, database configuration, deployment scripts)
+- `infra/` – Infrastructure and orchestration setup (docker-compose files, deployment scripts, shared environment wiring)
 
 ## How to Run the Web App
 
