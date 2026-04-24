@@ -110,43 +110,29 @@ All commands are run from the project root:
 
 ## TODO
 
-### 1. Fix Row Level Security (RLS) Bugs
+### Live Tracking And Map UX
 
-- [ ] **Admin Dashboard Data Visibility** — Admins currently cannot view user order data in the admin dashboard
-- [ ] Review and update Supabase RLS policies to allow admin role to read all orders
-- [ ] Test that regular users can still only see their own orders
-- [ ] Verify admin can see aggregated delivery data across all users
+- [ ] Show a live map preview while a delivery is running, including robot position, route progress, and current floor
+- [ ] Store and render floor map assets in a web-friendly format for previewing delivery progress on actual building maps
+- [ ] Add mobile-friendly live tracking views so users can follow a delivery from phone screens as easily as desktop
+- [ ] Add realtime subscriptions for robot and delivery updates so the web app refreshes automatically without manual reloads
 
-### 2. Docker Compose Setup
+### Admin Dashboard And Delivery Actions
 
-- [ ] Create `docker-compose.yml` in `infra/` directory
-- [ ] Containerize the web application
-- [ ] Add database service configuration
-- [ ] Add environment variable management for containers
+- [ ] Add real functionality to the admin dashboard delivery management buttons such as assign robot, dispatch robot, cancel delivery, and update delivery state in Supabase
+- [ ] Improve robot fleet visibility in the admin dashboard with battery, last update time, active job, and error state indicators
+- [ ] Add delivery status history and timestamps so admins and users can see each stage from pending to delivered
 
-**Why Docker benefits this project:**
+### Robot Integration
 
-- **Consistent environments** — Eliminates "works on my machine" issues; every developer and deployment runs the same setup
-- **Easy onboarding** — New team members can run `docker-compose up` instead of manually installing dependencies
-- **Microservices ready** — As we add backend services and robot simulators, Docker makes it easy to orchestrate multiple services
-- **Production parity** — Local development mirrors production, reducing deployment surprises
-- **Isolation** — Each service runs in its own container, preventing dependency conflicts
+- [ ] Connect app delivery destinations to robot navigation waypoints so a selected dropoff can become a robot navigation target
+- [ ] Add a robot command bridge or backend service that translates app actions into robot-side navigation commands
+- [ ] Add failure handling and recovery actions for stuck robots, failed deliveries, and manual intervention workflows
 
-### 3. Production Deployment
+### Backend, Data, And Security
 
-- [ ] Choose hosting platform (Vercel, Netlify, AWS, DigitalOcean, etc.)
-- [ ] Configure custom domain and SSL certificate
-- [ ] Set up production environment variables securely
-- [ ] Configure CI/CD pipeline for automated deployments
-- [ ] Set up monitoring and error tracking
-
-### 4. Robot Integration
-
-- [ ] **Simulated Robot** — Set up ROS2 simulation environment (Gazebo) for testing
-- [ ] **Physical Robot** — Establish communication protocol with Ausomo robot hardware
-- [ ] Implement WebSocket or MQTT connection between web app and robot
-- [ ] Add real-time robot position updates to the tracking interface
-- [ ] Create robot command API (start delivery, return to base, etc.)
+- [ ] Add role-safe Supabase policies and validation for admin actions that affect robots and deliveries
+- [ ] Add backend script documentation and setup steps for uploading maps, anchor points, and other building metadata
 
 ---
 
