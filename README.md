@@ -51,11 +51,19 @@ Learn more about project structure and setup in the sections below.
 
 2. **Set up environment variables:**
 
+   Copy the example environment file:
+
    ```bash
-   cp infra/.env.example infra/.env
+   cp infra/.env.example apps/web/.env.local
    ```
 
-   Then edit `infra/.env` with your Supabase credentials:
+   For the web app, the values used at runtime live in:
+
+   ```bash
+   apps/web/.env.local
+   ```
+
+   Update it with your Supabase credentials:
 
    ```env
    VITE_SUPABASE_URL=your_supabase_project_url
@@ -63,6 +71,10 @@ Learn more about project structure and setup in the sections below.
    ```
 
    You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+
+   The same example file also includes backend-only variables such as
+   `SUPABASE_SERVICE_ROLE` for the Python scripts in `backend/`, but those are not
+   required just to run the web app.
 
 3. **Install dependencies:**
 
