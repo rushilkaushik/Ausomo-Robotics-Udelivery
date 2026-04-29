@@ -27,6 +27,10 @@ export interface FloorMap {
   pcd_file_path: string | null
   pcd_file_name: string | null
   pcd_file_size: number | null
+  map_preview_path: string | null
+  map_preview_name: string | null
+  map_preview_size: number | null
+  map_preview_url: string | null
   created_at: string
   updated_at: string | null
 }
@@ -104,4 +108,3 @@ export interface Delivery {
   estimated_delivery_time: string | null
   updated_at: string
 }
-

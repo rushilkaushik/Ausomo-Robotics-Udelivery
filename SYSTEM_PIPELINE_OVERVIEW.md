@@ -9,7 +9,7 @@ This repository is no longer just a web frontend with placeholder backend folder
 2. `backend`
    Python utility scripts that seed and manage Supabase-backed map data and anchor-point data.
 3. `robot`
-   Still a placeholder for future robot runtime code.
+   Robot-side telemetry code that publishes live ROS2 position into Supabase.
 
 The important architectural detail is that the backend folder is not a long-running API service yet. It acts as a data-ingestion and storage-management layer for Supabase. The web app still talks directly to Supabase for auth, deliveries, floors, robots, and anchor points.
 
@@ -22,9 +22,9 @@ The important architectural detail is that the backend folder is not a long-runn
 - `backend`
   Python scripts for Supabase connection verification, floor-map upload, and anchor-point upload.
 - `infra`
-  Intended infra/config area, but currently not wired into the app setup as documented.
+  SQL migrations and deployment-level templates.
 - `robot`
-  Future robot integration area; no implemented runtime code yet.
+  ROS2 telemetry bridge and robot runtime environment template.
 
 ## End-to-end system picture
 
@@ -32,8 +32,8 @@ Today the real data flow looks like this:
 
 1. A developer or operator uses the Python scripts in `backend/` to upload map artifacts and anchor points into Supabase.
 2. The web app reads `floor_maps`, `anchor_points`, `deliveries`, `profiles`, and `robots` directly from Supabase.
-3. Auth and delivery creation also happen directly from the frontend through the Supabase client.
-4. The robot folder does not yet consume the uploaded map data or publish live robot telemetry into the database.
+3. Auth, delivery creation, and robot Realtime subscriptions happen directly from the frontend through the Supabase client.
+4. The robot telemetry bridge reads ROS2 pose data and updates the matching `robots` row.
 
 So the backend currently supports the web app indirectly by preparing the map/location data that the frontend needs when users create deliveries.
 
@@ -224,12 +224,12 @@ This means the backend-prepared map and anchor-point data directly affects wheth
   - uploading `.pcd` floor-map files to Storage
   - upserting `floor_maps`
   - uploading YAML-defined anchor points
+- Robot telemetry bridge that updates `robots` for Supabase Realtime
 
 ### Still missing
 
 - A true backend API service
 - Automated orchestration between delivery creation and robot assignment
-- A robot process that updates `robots` and `deliveries` in real time
 - A frontend map view that actually renders uploaded `.pcd` data
 - Tight packaging and run scripts for the Python backend
 
@@ -240,8 +240,8 @@ If you think of the repository as a working pipeline today, it is:
 1. Seed buildings/floor maps/anchor points in Supabase using backend Python scripts
 2. Run the web app
 3. Users sign in and create deliveries against those stored floor and anchor-point records
-4. Admins inspect deliveries and robots from Supabase
-5. Robot execution remains manual, mocked, or future work
+4. Run the robot telemetry bridge on the robot
+5. Users and admins see robot position changes through Supabase Realtime
 
 ## Important architectural caveat
 

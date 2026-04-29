@@ -51,30 +51,35 @@ Learn more about project structure and setup in the sections below.
 
 2. **Set up environment variables:**
 
-   Copy the example environment file:
+   The repo uses separate env files for each runtime area. For the web app:
 
    ```bash
-   cp infra/.env.example apps/web/.env.local
+   cp apps/web/.env.example apps/web/.env.local
    ```
 
-   For the web app, the values used at runtime live in:
+   Update `apps/web/.env.local` with your browser-safe Supabase credentials:
 
-   ```bash
-   apps/web/.env.local
-   ```
-
-   Update it with your Supabase credentials:
-
-   ```env
+   ```dotenv
    VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
    You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
-   The same example file also includes backend-only variables such as
-   `SUPABASE_SERVICE_ROLE` for the Python scripts in `backend/`, but those are not
-   required just to run the web app.
+   Backend map-upload scripts use their own service-role env file:
+
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+
+   Robot telemetry also has a separate env file that should live on the robot:
+
+   ```bash
+   cp robot/.env.example robot/.env
+   ```
+
+   Keep `SUPABASE_SERVICE_ROLE` out of `apps/web/.env.local`. The frontend only
+   needs the anon key because live robot positions come through Supabase Realtime.
 
 3. **Install dependencies:**
 
@@ -96,6 +101,36 @@ Learn more about project structure and setup in the sections below.
    npm run build
    npm run preview
    ```
+
+## Live Robot Position
+
+The web app reads live robot position from the `robots` table through Supabase
+Realtime. The browser does not connect directly to ROS or rosbridge.
+
+1. Run `infra/enable_robot_realtime.sql` in the Supabase SQL editor.
+2. Create `robot/.env` from `robot/.env.example` on the robot and set:
+
+   ```dotenv
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
+   ROBOT_ID=robot-1
+   ROS_MAP_FRAME=map
+   ROS_BASE_FRAME=base_link
+   TELEMETRY_RATE_HZ=2
+   ```
+
+3. Start the robot's ROS2 localization stack so `map -> base_link` TF is
+   available.
+4. Run the telemetry bridge on the robot:
+
+   ```bash
+   python3 robot/telemetry_bridge.py
+   ```
+
+For always-on use, run the telemetry bridge as a `systemd` service or container
+on the robot so it starts automatically when the robot boots. The web app will
+show live position whenever the robot is on, connected to the internet, and
+updating its `robots` row.
 
 ## Available Scripts
 

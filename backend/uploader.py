@@ -1,12 +1,14 @@
 import os
 import sys
 import argparse
-from datetime import datetime
+import tempfile
+from pathlib import Path
 from dotenv import load_dotenv
 from Supabase_client import create_client
 import mimetypes
+from PIL import Image
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE = os.getenv("SUPABASE_SERVICE_ROLE")
@@ -20,8 +22,27 @@ supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
 def build_storage_path(building_id: str, floor_number: int, version: str, filename: str) -> str:
     return f"Building/{building_id}/{floor_number}/{version}/{filename}" 
 
+def build_preview_storage_path(building_id: str, floor_number: int, version: str, filename: str) -> str:
+    return f"Building/{building_id}/{floor_number}/{version}/previews/{filename}"
+
 def local_file_size(path: str) -> int:
     return os.path.getsize(path)
+
+def convert_pgm_to_png(local_path: str) -> tuple[str, str]:
+    if not os.path.isfile(local_path):
+        raise FileNotFoundError(f"Preview source file does not exist: {local_path}")
+
+    base_name = os.path.splitext(os.path.basename(local_path))[0]
+
+    with Image.open(local_path) as image:
+        converted = image.convert("L")
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+            png_path = temp_file.name
+
+        converted.save(png_path, format="PNG")
+
+    return png_path, f"{base_name}.png"
 
 def upload_file_to_bucket(bucket: str, storage_path: str, local_path: str, replace: bool = True):
     with open(local_path, "rb") as fh:
@@ -73,7 +94,11 @@ def upsert_floor_map(building_id: str,
                      storage_path: str,
                      filename: str,
                      file_size: int,
-                     floor_name: str | None = None):
+                     floor_name: str | None = None,
+                     map_preview_path: str | None = None,
+                     map_preview_name: str | None = None,
+                     map_preview_size: int | None = None,
+                     map_preview_url: str | None = None):
     
     existing = (supabase.table("floor_maps")
                 .select("*")
@@ -95,19 +120,39 @@ def upsert_floor_map(building_id: str,
 
     if floor_name is not None:
         payload["floor_name"] = floor_name
+    if map_preview_path is not None:
+        payload["map_preview_path"] = map_preview_path
+    if map_preview_name is not None:
+        payload["map_preview_name"] = map_preview_name
+    if map_preview_size is not None:
+        payload["map_preview_size"] = map_preview_size
+    if map_preview_url is not None:
+        payload["map_preview_url"] = map_preview_url
 
     if len(rows) == 0:
         insert_resp = supabase.table("floor_maps").insert(payload).execute()
         return {"action": "inserted", "data": insert_resp.data}
     else:
+        update_payload = {
+            "pcd_file_path": storage_path,
+            "pcd_file_name": filename,
+            "pcd_file_size": file_size,
+            "version": version,
+        }
+
+        if floor_name is not None:
+            update_payload["floor_name"] = floor_name
+        if map_preview_path is not None:
+            update_payload["map_preview_path"] = map_preview_path
+        if map_preview_name is not None:
+            update_payload["map_preview_name"] = map_preview_name
+        if map_preview_size is not None:
+            update_payload["map_preview_size"] = map_preview_size
+        if map_preview_url is not None:
+            update_payload["map_preview_url"] = map_preview_url
+
         update_resp = supabase.table("floor_maps") \
-            .update({
-                 "pcd_file_path": storage_path,
-                "pcd_file_name": filename,
-                "pcd_file_size": file_size,
-                "version": version,
-                "floor_name": floor_name
-            }) \
+            .update(update_payload) \
             .eq("building_id", building_id) \
             .eq("floor_number", floor_number) \
             .execute()
@@ -120,7 +165,8 @@ def upload_pcd(building_id: str,
                version: str = "1.0.0",
                floor_name: str | None = None,
                bucket: str | None = None,
-               expires: int | None = 3600,):
+               expires: int | None = 3600,
+               preview_pgm_path: str | None = None,):
     
     if bucket is None:
         bucket = SUPABASE_BUCKET
@@ -143,8 +189,42 @@ def upload_pcd(building_id: str,
     print(f"[upload_pcd] Upload. Now generating URL (public or signed)...")
     url_info = get_file_url(bucket, storage_path, expires)
 
+    preview_storage_path = None
+    preview_filename = None
+    preview_size = None
+    preview_url = None
+
+    if preview_pgm_path:
+        print(f"[upload_pcd] Generating PNG preview from {preview_pgm_path}")
+        preview_png_path, preview_filename = convert_pgm_to_png(preview_pgm_path)
+
+        try:
+            preview_storage_path = build_preview_storage_path(
+                building_id, floor_number, version, preview_filename
+            )
+            preview_size = local_file_size(preview_png_path)
+
+            upload_file_to_bucket(bucket, preview_storage_path, preview_png_path, replace=True)
+            preview_url_info = get_file_url(bucket, preview_storage_path, expires)
+            preview_url = preview_url_info["url"]
+        finally:
+            if os.path.exists(preview_png_path):
+                os.remove(preview_png_path)
+
     print(f"[upload_pcd] Inserting/updating DB record in floor_maps...")
-    db_resp = upsert_floor_map(building_id, floor_number, version, storage_path, filename, file_size, floor_name)
+    db_resp = upsert_floor_map(
+        building_id,
+        floor_number,
+        version,
+        storage_path,
+        filename,
+        file_size,
+        floor_name,
+        preview_storage_path,
+        preview_filename,
+        preview_size,
+        preview_url,
+    )
 
     summary = {
         "storage_path": storage_path,
@@ -154,6 +234,10 @@ def upload_pcd(building_id: str,
         "url": url_info["url"],
         "signed": url_info["signed"],
         "expires_in": url_info["expires_in"],
+        "map_preview_path": preview_storage_path,
+        "map_preview_name": preview_filename,
+        "map_preview_size": preview_size,
+        "map_preview_url": preview_url,
         "db_action": db_resp["action"],
         "db_data": db_resp["data"],
     }
@@ -173,10 +257,17 @@ def add_anchor_point(supabase, floor_map_id: str, name: str, x: float, y: float,
     return resp.data
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Upload a .pcd floor map to Supabase and upsert floor_maps row.")
+    p = argparse.ArgumentParser(
+        description="Upload a floor map artifact to Supabase and optionally generate a PNG preview from a ROS .pgm file."
+    )
     p.add_argument("--building-id", required=True, help="UUID of building (matches buildings.id)")
     p.add_argument("--floor-number", required=True, type=int, help="Floor number (integer)")
-    p.add_argument("--file", required=True, help="Local path to .pcd file")
+    p.add_argument("--file", required=True, help="Local path to the main floor map file")
+    p.add_argument(
+        "--preview-pgm",
+        default=None,
+        help="Optional local path to a ROS .pgm map to convert and upload as a PNG preview",
+    )
     p.add_argument("--version", default="1.0.0", help="Map version (folder name). Default: 1.0.0")
     p.add_argument("--floor-name", default=None, help="Optional human-readable floor name")
     p.add_argument("--bucket", default=None, help="Bucket name (defaults to SUPABASE_BUCKET env var)")
@@ -193,7 +284,8 @@ if __name__ == "__main__":
             version=args.version,
             floor_name=args.floor_name,
             bucket=args.bucket or SUPABASE_BUCKET,
-            expires=args.signed_url_ttl
+            expires=args.signed_url_ttl,
+            preview_pgm_path=args.preview_pgm,
         )
         print("Upload summary:")
         for k, v in result.items():

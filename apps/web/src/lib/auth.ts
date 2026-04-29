@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient";
 import type { User } from '@supabase/supabase-js'
-import { AuthUser, Delivery, Robot, AnchorPoint } from './types'
+import { AuthUser, Delivery, Robot, AnchorPoint, FloorMap } from './types'
 
 
 export async function signUpNewUser(email:string, password:string, userData: {
@@ -112,6 +112,17 @@ export async function getAnchorPointsForFloor(floorMapId: string): Promise<Ancho
 
   if (fetchError) throw fetchError
   return anchorPoints
+}
+
+export async function getFloorMapById(floorMapId: string): Promise<FloorMap | null> {
+  const { data: floorMap, error: fetchError } = await supabase
+    .from('floor_maps')
+    .select('*')
+    .eq('id', floorMapId)
+    .single()
+
+  if (fetchError) throw fetchError
+  return floorMap
 }
 
 export async function createDelivery(

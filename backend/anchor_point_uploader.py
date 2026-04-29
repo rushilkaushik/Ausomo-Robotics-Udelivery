@@ -67,9 +67,10 @@ def upload_anchor_points(supabase: Client, floor_map_id: str, yaml_path: str):
 
 if __name__ == "__main__":
     import os
+    from pathlib import Path
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(Path(__file__).with_name(".env"))
 
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_ROLE")

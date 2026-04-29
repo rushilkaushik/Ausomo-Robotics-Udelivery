@@ -359,6 +359,10 @@ export function AdminDashboard({ buildingName, buildingId, robots, deliveries, o
                           <div className="col-span-2 text-muted-foreground truncate">
                             {robot.current_location || "Unknown location"}
                           </div>
+                          <div className="col-span-2 font-mono text-xs text-muted-foreground">
+                            x={robot.position_x !== null ? robot.position_x.toFixed(3) : "n/a"}{" "}
+                            y={robot.position_y !== null ? robot.position_y.toFixed(3) : "n/a"}
+                          </div>
                           {deliveries.find((delivery) => delivery.robot_id === robot.robot_id)?.delivery_code && (
                             <div className="col-span-2 flex items-center gap-1">
                               <Package className="h-3 w-3 text-blue-500" />

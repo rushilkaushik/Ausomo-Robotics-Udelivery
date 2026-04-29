@@ -12,8 +12,9 @@ import { DeliveryForm } from "./DeliveryForm";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { useAuth } from '../contexts/AuthContext';
-import { getUserDeliveries } from "../lib/auth";
-import { Delivery } from "../lib/types";
+import { getFloorMapById, getUserDeliveries } from "../lib/auth";
+import { Delivery, FloorMap } from "../lib/types";
+import { useRealtimeRobotPosition } from "../lib/useRealtimeRobotPosition";
 import {
   Settings,
   Phone,
@@ -30,6 +31,7 @@ export function UserDashboard() {
 
   // Data state
   const [userDeliveries, setUserDeliveries] = useState<Delivery[] | null>(null);
+  const [activeFloorMap, setActiveFloorMap] = useState<FloorMap | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Page state
@@ -72,6 +74,28 @@ export function UserDashboard() {
 
   // Get active delivery
   const activeDelivery = userDeliveries?.find(d => d.id === selectedDelivery) || userDeliveries?.[0];
+  const robotPosition = useRealtimeRobotPosition(activeDelivery?.robot_id);
+
+  useEffect(() => {
+    const floorMapId = activeDelivery?.floor_map_id;
+
+    if (!floorMapId) {
+      setActiveFloorMap(null);
+      return;
+    }
+
+    const fetchFloorMap = async () => {
+      try {
+        const floorMap = await getFloorMapById(floorMapId);
+        setActiveFloorMap(floorMap);
+      } catch (error) {
+        console.error("Failed to load floor map preview:", error);
+        setActiveFloorMap(null);
+      }
+    };
+
+    void fetchFloorMap();
+  }, [activeDelivery?.floor_map_id]);
 
   // Helper function to map delivery status to step number
   const getStepFromStatus = (status: Delivery['status']): number => {
@@ -170,11 +194,18 @@ export function UserDashboard() {
                 </div>
               ) : (
                 <MobileBuildingMap
-                  currentFloor={1}
-                  destinationFloor={1}
-                  robotPosition={{ x: 20, y: 80 }}
+                  floorLabel={
+                    activeFloorMap?.floor_name ||
+                    (activeFloorMap?.floor_number
+                      ? `Floor ${activeFloorMap.floor_number}`
+                      : "Floor map")
+                  }
                   pathCompleted={activeDelivery.progress_percentage}
                   buildingName={activeDelivery.building_id}
+                  mapPreviewUrl={activeFloorMap?.map_preview_url || null}
+                  liveX={robotPosition.x}
+                  liveY={robotPosition.y}
+                  isLive={robotPosition.isLive}
                 />
               )}
             </div>
