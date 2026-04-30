@@ -2,16 +2,14 @@
 
 ## Current system state
 
-This repository is no longer just a web frontend with placeholder backend folders. The implemented code now falls into three practical areas:
+This repository is no longer just a web frontend with placeholder backend folders. The implemented code now falls into two practical areas:
 
 1. `apps/web`
    The user-facing React/Vite application. This is still the main runnable product.
 2. `backend`
    Python utility scripts that seed and manage Supabase-backed map data and anchor-point data.
-3. `robot`
-   Robot-side telemetry code that publishes live ROS2 position into Supabase.
 
-The important architectural detail is that the backend folder is not a long-running API service yet. It acts as a data-ingestion and storage-management layer for Supabase. The web app still talks directly to Supabase for auth, deliveries, floors, robots, and anchor points.
+The important architectural detail is that the backend folder is not a long-running API service yet. It acts as a data-ingestion and storage-management layer for Supabase. The web app still talks directly to Supabase for auth, deliveries, floors, robots, and anchor points. Robot-side ROS2 telemetry now lives in the separate `ada-senior-design` repo under `src/supabase_telemetry/`.
 
 ## Repository roles
 
@@ -23,9 +21,6 @@ The important architectural detail is that the backend folder is not a long-runn
   Python scripts for Supabase connection verification, floor-map upload, and anchor-point upload.
 - `infra`
   SQL migrations and deployment-level templates.
-- `robot`
-  ROS2 telemetry bridge and robot runtime environment template.
-
 ## End-to-end system picture
 
 Today the real data flow looks like this:
@@ -33,7 +28,7 @@ Today the real data flow looks like this:
 1. A developer or operator uses the Python scripts in `backend/` to upload map artifacts and anchor points into Supabase.
 2. The web app reads `floor_maps`, `anchor_points`, `deliveries`, `profiles`, and `robots` directly from Supabase.
 3. Auth, delivery creation, and robot Realtime subscriptions happen directly from the frontend through the Supabase client.
-4. The robot telemetry bridge reads ROS2 pose data and updates the matching `robots` row.
+4. The telemetry bridge in `ada-senior-design/src/supabase_telemetry/` reads ROS2 pose data and updates the matching `robots` row.
 
 So the backend currently supports the web app indirectly by preparing the map/location data that the frontend needs when users create deliveries.
 
@@ -224,7 +219,7 @@ This means the backend-prepared map and anchor-point data directly affects wheth
   - uploading `.pcd` floor-map files to Storage
   - upserting `floor_maps`
   - uploading YAML-defined anchor points
-- Robot telemetry bridge that updates `robots` for Supabase Realtime
+- Robot Realtime subscriptions in the frontend; the ROS2 telemetry bridge lives in `ada-senior-design`
 
 ### Still missing
 
@@ -240,7 +235,7 @@ If you think of the repository as a working pipeline today, it is:
 1. Seed buildings/floor maps/anchor points in Supabase using backend Python scripts
 2. Run the web app
 3. Users sign in and create deliveries against those stored floor and anchor-point records
-4. Run the robot telemetry bridge on the robot
+4. Run the robot telemetry bridge from `ada-senior-design` on the robot
 5. Users and admins see robot position changes through Supabase Realtime
 
 ## Important architectural caveat

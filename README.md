@@ -37,8 +37,10 @@ Learn more about project structure and setup in the sections below.
   - `ios/` – iOS mobile frontend
   - `android/` – Android mobile frontend
 - `services/` – Backend services (REST APIs, workers, order management, map data handling)
-- `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
 - `infra/` – Infrastructure and configuration (environment variables, docker-compose files, deployment scripts)
+
+Robot-side ROS2 telemetry runs from the separate `ada-senior-design` repo under
+`src/supabase_telemetry/`.
 
 ## How to Run the Web App
 
@@ -51,13 +53,7 @@ Learn more about project structure and setup in the sections below.
 
 2. **Set up environment variables:**
 
-   The repo uses separate env files for each runtime area. For the web app:
-
-   ```bash
-   cp apps/web/.env.example apps/web/.env.local
-   ```
-
-   Update `apps/web/.env.local` with your browser-safe Supabase credentials:
+   Create `apps/web/.env.local` with browser-safe Supabase credentials:
 
    ```dotenv
    VITE_SUPABASE_URL=your_supabase_project_url
@@ -66,20 +62,17 @@ Learn more about project structure and setup in the sections below.
 
    You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
 
-   Backend map-upload scripts use their own service-role env file:
+   Create `backend/.env` for backend map-upload scripts:
 
-   ```bash
-   cp backend/.env.example backend/.env
-   ```
-
-   Robot telemetry also has a separate env file that should live on the robot:
-
-   ```bash
-   cp robot/.env.example robot/.env
+   ```dotenv
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
+   SUPABASE_BUCKET=maps
    ```
 
    Keep `SUPABASE_SERVICE_ROLE` out of `apps/web/.env.local`. The frontend only
-   needs the anon key because live robot positions come through Supabase Realtime.
+   needs the anon key. Robot telemetry uses a service-role key from the
+   `ada-senior-design/src/supabase_telemetry/.env` file on the robot.
 
 3. **Install dependencies:**
 
@@ -107,8 +100,9 @@ Learn more about project structure and setup in the sections below.
 The web app reads live robot position from the `robots` table through Supabase
 Realtime. The browser does not connect directly to ROS or rosbridge.
 
-1. Run `infra/enable_robot_realtime.sql` in the Supabase SQL editor.
-2. Create `robot/.env` from `robot/.env.example` on the robot and set:
+1. Confirm Supabase Realtime is enabled for the `public.robots` table.
+2. In the `ada-senior-design` repo on the robot, create
+   `src/supabase_telemetry/.env` and set:
 
    ```dotenv
    SUPABASE_URL=your_supabase_project_url
@@ -117,14 +111,16 @@ Realtime. The browser does not connect directly to ROS or rosbridge.
    ROS_MAP_FRAME=map
    ROS_BASE_FRAME=base_link
    TELEMETRY_RATE_HZ=2
+   CURRENT_FLOOR_MAP_ID=
    ```
 
 3. Start the robot's ROS2 localization stack so `map -> base_link` TF is
    available.
-4. Run the telemetry bridge on the robot:
+4. Run the telemetry bridge from the `ada-senior-design` repo on the robot:
 
    ```bash
-   python3 robot/telemetry_bridge.py
+   cd ~/udeliver/ada-senior-design
+   python3 src/supabase_telemetry/telemetry_bridge.py
    ```
 
 For always-on use, run the telemetry bridge as a `systemd` service or container
