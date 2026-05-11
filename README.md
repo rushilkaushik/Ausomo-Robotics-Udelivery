@@ -111,6 +111,7 @@ Realtime. The browser does not connect directly to ROS or rosbridge.
    ROS_MAP_FRAME=map
    ROS_BASE_FRAME=base_link
    TELEMETRY_RATE_HZ=2
+   LOCALIZATION_ERROR_UPDATE_SECONDS=5
    CURRENT_FLOOR_MAP_ID=
    ```
 
@@ -123,10 +124,14 @@ Realtime. The browser does not connect directly to ROS or rosbridge.
    python3 src/supabase_telemetry/telemetry_bridge.py
    ```
 
+The bridge does not publish `/odom` as map coordinates. If map-frame
+localization is unavailable, the robot row is marked `error` and the web app
+shows the telemetry as not live.
+
 For always-on use, run the telemetry bridge as a `systemd` service or container
 on the robot so it starts automatically when the robot boots. The web app will
-show live position whenever the robot is on, connected to the internet, and
-updating its `robots` row.
+show live position whenever the robot is on, localized on the saved map,
+connected to the internet, and updating its `robots` row.
 
 ## Available Scripts
 

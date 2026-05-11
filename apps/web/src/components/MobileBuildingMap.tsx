@@ -11,6 +11,7 @@ interface MobileBuildingMapProps {
   liveX: number | null;
   liveY: number | null;
   isLive: boolean;
+  telemetryMessage: string;
 }
 
 export function MobileBuildingMap({ 
@@ -21,6 +22,7 @@ export function MobileBuildingMap({
   liveX,
   liveY,
   isLive,
+  telemetryMessage,
 }: MobileBuildingMapProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const [previewError, setPreviewError] = useState(false);
@@ -87,6 +89,9 @@ export function MobileBuildingMap({
             {isLive ? "Live" : "Not live"}
           </span>
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {telemetryMessage}
+        </p>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg border bg-gray-50 p-3">

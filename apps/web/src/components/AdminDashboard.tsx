@@ -27,10 +27,18 @@ interface AdminDashboardProps {
   buildingId: string;
   robots: Robot[];
   deliveries: Delivery[];
+  onDeliveriesChanged?: () => void | Promise<void>;
   onLogout: () => void;
 }
 
-export function AdminDashboard({ buildingName, buildingId, robots, deliveries, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({
+  buildingName,
+  buildingId,
+  robots,
+  deliveries,
+  onDeliveriesChanged,
+  onLogout,
+}: AdminDashboardProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
   const [destinationNames, setDestinationNames] = useState<Record<string, string>>({});
@@ -463,6 +471,7 @@ export function AdminDashboard({ buildingName, buildingId, robots, deliveries, o
                     <AdminAssignRobotButton
                       delivery={delivery}
                       robots={robots}
+                      onAssigned={onDeliveriesChanged}
                     />
                     <AdminDispatchRobotButton
                       delivery={delivery}

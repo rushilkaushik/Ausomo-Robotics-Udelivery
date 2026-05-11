@@ -10,6 +10,7 @@ type RealtimeRobotPosition = {
   y: number | null;
   z: number | null;
   isLive: boolean;
+  localizationUnavailable: boolean;
   connected: boolean;
   configured: boolean;
   lastUpdatedAt: number | null;
@@ -108,9 +109,11 @@ export function useRealtimeRobotPosition(robotId: string | null | undefined): Re
 
   const lastUpdatedAt = updatedAtToTime(robot?.updated_at);
   const hasPosition = robot?.position_x !== null && robot?.position_y !== null;
+  const localizationUnavailable = robot?.status === "error";
   const isLive =
     Boolean(robotId) &&
     hasPosition &&
+    !localizationUnavailable &&
     lastUpdatedAt !== null &&
     now - lastUpdatedAt <= LIVE_TIMEOUT_MS;
 
@@ -120,6 +123,7 @@ export function useRealtimeRobotPosition(robotId: string | null | undefined): Re
     y: robot?.position_y ?? null,
     z: robot?.position_z ?? null,
     isLive,
+    localizationUnavailable,
     connected,
     configured: Boolean(robotId),
     lastUpdatedAt,

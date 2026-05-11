@@ -120,6 +120,26 @@ export function UserDashboard() {
     return 'pending';
   };
 
+  const getTelemetryMessage = () => {
+    if (!activeDelivery?.robot_id) {
+      return "No robot has been assigned to this delivery yet.";
+    }
+
+    if (robotPosition.localizationUnavailable) {
+      return "Robot is online, but map-frame localization is unavailable.";
+    }
+
+    if (!robotPosition.connected) {
+      return "Connecting to live robot updates.";
+    }
+
+    if (!robotPosition.isLive) {
+      return "Waiting for fresh map-frame coordinates from the robot.";
+    }
+
+    return "Showing live map-frame coordinates from the assigned robot.";
+  };
+
   // Show create delivery form
   if (showCreateDelivery) {
     return (
@@ -206,6 +226,7 @@ export function UserDashboard() {
                   liveX={robotPosition.x}
                   liveY={robotPosition.y}
                   isLive={robotPosition.isLive}
+                  telemetryMessage={getTelemetryMessage()}
                 />
               )}
             </div>

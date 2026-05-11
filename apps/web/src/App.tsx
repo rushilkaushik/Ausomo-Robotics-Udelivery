@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Login } from "./components/Login";
 import { SignUp } from "./components/SignUp";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext';
 import { getAdminBuildingDeliveries } from "./lib/auth";
 import { supabase } from "./lib/supabaseClient";
 import { useRealtimeRobotsForBuilding } from "./lib/useRealtimeRobotPosition";
+import type { Delivery } from "./lib/types";
 
 export default function App() {
   // Authentication state
@@ -16,30 +17,30 @@ export default function App() {
   const [showSignUp, setShowSignUp] = useState(false);
 
   // Admin data state
-  const [buildingDeliveries, setBuildingDeliveries] = useState<any[] | null>(null);
+  const [buildingDeliveries, setBuildingDeliveries] = useState<Delivery[] | null>(null);
   const [adminBuildingName, setAdminBuildingName] = useState<string>("Unknown Building");
   const adminBuildingId = user?.role === "admin" ? user.building_id : null;
   const { robots: buildingRobots } = useRealtimeRobotsForBuilding(adminBuildingId);
 
-  // Fetch admin data when user is admin
-  useEffect(() => {
+  const fetchAdminData = useCallback(async () => {
     if (!user || user.role !== "admin" || !user.building_id) return;
 
-    const fetchAdminData = async () => {
-      const deliveries = await getAdminBuildingDeliveries(user);
+    const deliveries = await getAdminBuildingDeliveries(user);
 
-      const { data: building } = await supabase
-        .from("buildings")
-        .select("name")
-        .eq("id", user.building_id)
-        .single();
+    const { data: building } = await supabase
+      .from("buildings")
+      .select("name")
+      .eq("id", user.building_id)
+      .single();
 
-      setBuildingDeliveries(deliveries || []);
-      setAdminBuildingName(building?.name || "Unknown Building");
-    };
-
-    fetchAdminData();
+    setBuildingDeliveries(deliveries || []);
+    setAdminBuildingName(building?.name || "Unknown Building");
   }, [user]);
+
+  // Fetch admin data when user is admin
+  useEffect(() => {
+    void fetchAdminData();
+  }, [fetchAdminData]);
 
   // Show loading state while checking authentication
   if (loading) {
@@ -66,6 +67,7 @@ export default function App() {
         buildingId={user.building_id || "Unknown building ID"}
         robots={buildingRobots || []}
         deliveries={buildingDeliveries || []}
+        onDeliveriesChanged={fetchAdminData}
         onLogout={signOut}
       />
     );
