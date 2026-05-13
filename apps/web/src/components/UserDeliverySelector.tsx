@@ -7,6 +7,7 @@ import { Delivery, DeliveryStatus } from '../lib/types';
 interface UserDeliverySelectorProps {
   deliveries: Delivery[];
   selectedDeliveryId: string;
+  getDestinationLabel: (delivery: Delivery) => string;
   onSelectDelivery: (deliveryId: string) => void;
 }
 
@@ -35,6 +36,7 @@ const statusLabels: Record<DeliveryStatus, string> = {
 export function UserDeliverySelector({
   deliveries,
   selectedDeliveryId,
+  getDestinationLabel,
   onSelectDelivery
 }: UserDeliverySelectorProps) {
   return (
@@ -79,7 +81,6 @@ export function UserDeliverySelector({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
                       <p className="text-sm font-mono font-semibold">{delivery.delivery_code}</p>
-                      <p className="text-xs text-muted-foreground">ID: {delivery.id.slice(0, 8)}</p>
                     </div>
                     <Badge
                       variant="secondary"
@@ -93,7 +94,7 @@ export function UserDeliverySelector({
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin className="h-3 w-3 flex-shrink-0" />
                       <span className="truncate">
-                        {delivery.dropoff_anchor_point_id || 'Destination pending'}
+                        {getDestinationLabel(delivery)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">

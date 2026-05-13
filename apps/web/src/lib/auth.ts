@@ -114,6 +114,39 @@ export async function getAnchorPointsForFloor(floorMapId: string): Promise<Ancho
   return anchorPoints
 }
 
+export async function getAnchorPointNamesByIds(anchorPointIds: string[]): Promise<Record<string, string>> {
+  const uniqueAnchorPointIds = Array.from(new Set(anchorPointIds.filter(Boolean)))
+
+  if (uniqueAnchorPointIds.length === 0) {
+    return {}
+  }
+
+  const { data: anchorPoints, error: fetchError } = await supabase
+    .from('anchor_points')
+    .select('id, name')
+    .in('id', uniqueAnchorPointIds)
+
+  if (fetchError) throw fetchError
+
+  return (anchorPoints || []).reduce<Record<string, string>>((acc, point) => {
+    if (point.name) {
+      acc[point.id] = point.name
+    }
+    return acc
+  }, {})
+}
+
+export async function getBuildingNameById(buildingId: string): Promise<string | null> {
+  const { data: building, error: fetchError } = await supabase
+    .from('buildings')
+    .select('name')
+    .eq('id', buildingId)
+    .single()
+
+  if (fetchError) throw fetchError
+  return building?.name || null
+}
+
 export async function getFloorMapById(floorMapId: string): Promise<FloorMap | null> {
   const { data: floorMap, error: fetchError } = await supabase
     .from('floor_maps')
@@ -142,6 +175,7 @@ export async function createDelivery(
     .insert({
       delivery_code: deliveryCode,
       user_id: userId,
+      robot_id: null,
       building_id: buildingId,
       floor_map_id: floorMapId,
       pickup_anchor_point_id: pickupAnchorPointId,

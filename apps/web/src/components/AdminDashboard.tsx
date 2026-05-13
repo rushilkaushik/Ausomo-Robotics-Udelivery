@@ -470,7 +470,6 @@ export function AdminDashboard({
                   <div className="flex justify-end gap-2 mt-4">
                     <AdminAssignRobotButton
                       delivery={delivery}
-                      robots={robots}
                       onAssigned={onDeliveriesChanged}
                     />
                     <AdminDispatchRobotButton
@@ -480,6 +479,7 @@ export function AdminDashboard({
                     <AdminCancelDeliveryButton
                       delivery={delivery}
                       recipientName={delivery.user_id ? recipientNames[delivery.user_id] || "Unknown recipient" : "Guest / unknown"}
+                      onCancelled={onDeliveriesChanged}
                     />
                   </div>
                 </Card>

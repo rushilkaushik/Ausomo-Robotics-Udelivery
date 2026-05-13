@@ -1,6 +1,6 @@
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { User, MapPin, Package, Clock } from "lucide-react";
+import { User, Package, Clock } from "lucide-react";
 
 interface DeliveryDetailsProps {
   recipient: {
@@ -64,7 +64,7 @@ export function DeliveryDetails({ recipient, package: pkg, timing }: DeliveryDet
           </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Package ID:</span>
+              <span className="text-muted-foreground">Delivery ID:</span>
               <span className="font-mono">{pkg.id}</span>
             </div>
             <div className="flex justify-between">

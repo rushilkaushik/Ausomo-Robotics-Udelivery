@@ -12,7 +12,12 @@ import { DeliveryForm } from "./DeliveryForm";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { useAuth } from '../contexts/AuthContext';
-import { getFloorMapById, getUserDeliveries } from "../lib/auth";
+import {
+  getAnchorPointNamesByIds,
+  getBuildingNameById,
+  getFloorMapById,
+  getUserDeliveries,
+} from "../lib/auth";
 import { Delivery, FloorMap } from "../lib/types";
 import { useRealtimeRobotPosition } from "../lib/useRealtimeRobotPosition";
 import {
@@ -32,6 +37,12 @@ export function UserDashboard() {
   // Data state
   const [userDeliveries, setUserDeliveries] = useState<Delivery[] | null>(null);
   const [activeFloorMap, setActiveFloorMap] = useState<FloorMap | null>(null);
+  const [anchorPointNames, setAnchorPointNames] = useState<Record<string, string>>({});
+  const [loadedAnchorPointIdsKey, setLoadedAnchorPointIdsKey] = useState("");
+  const [isLoadingAnchorPointNames, setIsLoadingAnchorPointNames] = useState(false);
+  const [buildingName, setBuildingName] = useState<string | null>(null);
+  const [loadedBuildingId, setLoadedBuildingId] = useState("");
+  const [isLoadingBuildingName, setIsLoadingBuildingName] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Page state
@@ -75,6 +86,59 @@ export function UserDashboard() {
   // Get active delivery
   const activeDelivery = userDeliveries?.find(d => d.id === selectedDelivery) || userDeliveries?.[0];
   const robotPosition = useRealtimeRobotPosition(activeDelivery?.robot_id);
+  const deliveryAnchorPointIdsKey = Array.from(new Set(
+    (userDeliveries || []).flatMap((delivery) => [
+      delivery.pickup_anchor_point_id,
+      delivery.dropoff_anchor_point_id,
+    ]).filter(Boolean) as string[]
+  )).sort().join("|");
+  const hasLoadedAnchorPointNames = deliveryAnchorPointIdsKey === loadedAnchorPointIdsKey;
+
+  const getAnchorPointLabel = (
+    anchorPointId: string | null | undefined,
+    pendingLabel: string,
+    unknownLabel: string,
+  ) => {
+    if (!anchorPointId) {
+      return pendingLabel;
+    }
+
+    if (anchorPointNames[anchorPointId]) {
+      return anchorPointNames[anchorPointId];
+    }
+
+    if (!hasLoadedAnchorPointNames || isLoadingAnchorPointNames) {
+      return "Loading...";
+    }
+
+    return unknownLabel;
+  };
+
+  const getDestinationLabel = (delivery: Delivery) =>
+    getAnchorPointLabel(
+      delivery.dropoff_anchor_point_id,
+      "Destination pending",
+      "Unknown destination",
+    );
+
+  const currentLocationLabel = getAnchorPointLabel(
+    activeDelivery?.pickup_anchor_point_id,
+    "Unknown",
+    "Unknown location",
+  );
+  const activeDestinationLabel = activeDelivery
+    ? getDestinationLabel(activeDelivery)
+    : "Destination";
+  const activeBuildingLabel =
+    activeDelivery?.building_id && buildingName && loadedBuildingId === activeDelivery.building_id
+      ? buildingName
+      : isLoadingBuildingName
+        ? "Loading..."
+        : "Unknown building";
+  const assignedRobotLabel = activeDelivery?.robot_id
+    ? robotPosition.robot?.name || "Assigned robot"
+    : "No robot assigned";
+  const assignedRobotDescription = robotPosition.robot?.name || "your assigned robot";
 
   useEffect(() => {
     const floorMapId = activeDelivery?.floor_map_id;
@@ -96,6 +160,86 @@ export function UserDashboard() {
 
     void fetchFloorMap();
   }, [activeDelivery?.floor_map_id]);
+
+  useEffect(() => {
+    const anchorPointIds = deliveryAnchorPointIdsKey ? deliveryAnchorPointIdsKey.split("|") : [];
+
+    if (anchorPointIds.length === 0) {
+      setAnchorPointNames({});
+      setLoadedAnchorPointIdsKey("");
+      setIsLoadingAnchorPointNames(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingAnchorPointNames(true);
+
+    const fetchAnchorPointNames = async () => {
+      try {
+        const names = await getAnchorPointNamesByIds(anchorPointIds);
+        if (!isCancelled) {
+          setAnchorPointNames(names);
+          setLoadedAnchorPointIdsKey(deliveryAnchorPointIdsKey);
+        }
+      } catch (error) {
+        console.error("Failed to load anchor point names:", error);
+        if (!isCancelled) {
+          setAnchorPointNames({});
+          setLoadedAnchorPointIdsKey(deliveryAnchorPointIdsKey);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingAnchorPointNames(false);
+        }
+      }
+    };
+
+    void fetchAnchorPointNames();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [deliveryAnchorPointIdsKey]);
+
+  useEffect(() => {
+    const buildingId = activeDelivery?.building_id;
+
+    if (!buildingId) {
+      setBuildingName(null);
+      setLoadedBuildingId("");
+      setIsLoadingBuildingName(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingBuildingName(true);
+
+    const fetchBuildingName = async () => {
+      try {
+        const name = await getBuildingNameById(buildingId);
+        if (!isCancelled) {
+          setBuildingName(name);
+          setLoadedBuildingId(buildingId);
+        }
+      } catch (error) {
+        console.error("Failed to load building name:", error);
+        if (!isCancelled) {
+          setBuildingName(null);
+          setLoadedBuildingId(buildingId);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingBuildingName(false);
+        }
+      }
+    };
+
+    void fetchBuildingName();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeDelivery?.building_id]);
 
   // Helper function to map delivery status to step number
   const getStepFromStatus = (status: Delivery['status']): number => {
@@ -198,7 +342,7 @@ export function UserDashboard() {
                       batteryLevel={100}
                       progress={activeDelivery.progress_percentage}
                       currentStep={getStepFromStatus(activeDelivery.status)}
-                      currentLocation={activeDelivery.pickup_anchor_point_id || "Unknown"}
+                      currentLocation={currentLocationLabel}
                     />
                   </div>
 
@@ -221,7 +365,7 @@ export function UserDashboard() {
                       : "Floor map")
                   }
                   pathCompleted={activeDelivery.progress_percentage}
-                  buildingName={activeDelivery.building_id}
+                  buildingName={activeBuildingLabel}
                   mapPreviewUrl={activeFloorMap?.map_preview_url || null}
                   liveX={robotPosition.x}
                   liveY={robotPosition.y}
@@ -239,7 +383,7 @@ export function UserDashboard() {
             <DeliveryDetails
               recipient={{
                 name: user?.full_name || "User",
-                apartment: activeDelivery.dropoff_anchor_point_id || "N/A",
+                apartment: activeDelivery.dropoff_anchor_point_id ? activeDestinationLabel : "N/A",
                 floor: 1,
                 phone: user?.email || "N/A"
               }}
@@ -290,9 +434,9 @@ export function UserDashboard() {
           <div className="flex-1 p-4 space-y-4 overflow-y-auto">
             {activeDelivery.robot_id ? (
               <RobotStatus
-                robotId={activeDelivery.robot_id}
+                robotName={assignedRobotLabel}
                 batteryLevel={100}
-                currentLocation={activeDelivery.pickup_anchor_point_id || "Unknown"}
+                currentLocation={currentLocationLabel}
                 speed={1.5}
                 status={robotStatus}
               />
@@ -313,7 +457,7 @@ export function UserDashboard() {
               <h3 className="mb-4">Assigned Robot</h3>
               <p className="text-sm text-muted-foreground">
                 {activeDelivery.robot_id
-                  ? `Your delivery is being handled by robot ${activeDelivery.robot_id}`
+                  ? `Your delivery is being handled by ${assignedRobotDescription}.`
                   : "No robot assigned yet"}
               </p>
             </Card>
@@ -329,6 +473,7 @@ export function UserDashboard() {
                 <UserDeliverySelector
                   deliveries={userDeliveries}
                   selectedDeliveryId={selectedDelivery || ""}
+                  getDestinationLabel={getDestinationLabel}
                   onSelectDelivery={setSelectedDelivery}
                 />
               </div>
@@ -340,8 +485,8 @@ export function UserDashboard() {
                 <h3 className="mb-4">Delivery Information</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Building ID:</span>
-                    <span>{activeDelivery.building_id}</span>
+                    <span className="text-muted-foreground">Building:</span>
+                    <span>{activeBuildingLabel}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Delivery Code:</span>
@@ -470,9 +615,9 @@ export function UserDashboard() {
           deliveryId={activeDelivery.delivery_code}
           status={getStatusBarStatus(activeDelivery.status)}
           recipientName={user?.full_name || "User"}
-          destination={activeDelivery.dropoff_anchor_point_id || "Destination"}
+          destination={activeDestinationLabel}
           eta={activeDelivery.estimated_delivery_time || "Calculating..."}
-          currentLocation={activeDelivery.pickup_anchor_point_id || "Unknown"}
+          currentLocation={currentLocationLabel}
         />
       )}
 

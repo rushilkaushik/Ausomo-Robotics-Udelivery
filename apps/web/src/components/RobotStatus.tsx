@@ -1,17 +1,16 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Progress } from "./ui/progress";
 import { Bot, Battery, MapPin, Clock } from "lucide-react";
 
 interface RobotStatusProps {
-  robotId: string;
+  robotName: string;
   batteryLevel: number;
   currentLocation: string;
   speed: number;
   status: 'moving' | 'stopped' | 'loading' | 'delivering';
 }
 
-export function RobotStatus({ robotId, batteryLevel, currentLocation, speed, status }: RobotStatusProps) {
+export function RobotStatus({ robotName, batteryLevel, currentLocation, speed, status }: RobotStatusProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'moving': return 'bg-green-500';
@@ -49,10 +48,10 @@ export function RobotStatus({ robotId, batteryLevel, currentLocation, speed, sta
       </div>
 
       <div className="space-y-4">
-        {/* Robot ID */}
+        {/* Robot */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Robot ID</span>
-          <span className="font-mono">{robotId}</span>
+          <span className="text-sm text-muted-foreground">Robot</span>
+          <span className="text-sm">{robotName}</span>
         </div>
 
         {/* Battery Level */}
