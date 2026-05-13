@@ -126,13 +126,14 @@ This appears to be an auxiliary local file and is not part of the current runtim
 
 ### `backend/requirements.txt`
 
-This file currently lists only `boto3`, but the implemented backend scripts also import:
+This file lists the packages needed by the backend scripts:
 
+- `boto3`
 - `supabase`
 - `python-dotenv`
 - `PyYAML`
 
-So the backend tooling exists, but its dependency manifest is not yet aligned with the code in the folder.
+That gives the next team a direct install path for the Python tooling in this branch.
 
 ## How the backend works with the web app
 
@@ -231,7 +232,7 @@ This means the backend-prepared map and anchor-point data directly affects wheth
 - Automated orchestration between delivery creation and robot assignment
 - A robot process that updates `robots` and `deliveries` in real time
 - A frontend map view that actually renders uploaded `.pcd` data
-- Tight packaging and run scripts for the Python backend
+- A maintained deployment target or deployment runbook
 
 ## Practical pipeline summary
 
@@ -258,3 +259,7 @@ Instead, it currently behaves more like:
 - robot integration not yet connected
 
 That distinction matters because the backend scripts enrich the data model, but they do not yet control application runtime behavior.
+
+## Handoff note
+
+This branch should be handed off as the stable Supabase/web baseline for the project. It is useful for understanding the current user-facing app and data-loading workflow, but it does not contain the gateway-based robot communication work explored later on the `roslibjs` branch.

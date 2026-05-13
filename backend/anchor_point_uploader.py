@@ -1,6 +1,10 @@
+import argparse
+import os
+from typing import Dict, List
+
 import yaml
-from typing import List, Dict
-from supabase import create_client, Client
+from dotenv import load_dotenv
+from supabase import Client, create_client
 
 VALID_ANCHOR_TYPES = {
     "entrance",
@@ -65,30 +69,42 @@ def upload_anchor_points(supabase: Client, floor_map_id: str, yaml_path: str):
     return resp.data
 
 
-if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Upload anchor-point data from YAML into the Supabase anchor_points table."
+    )
+    parser.add_argument(
+        "--floor-map-id",
+        required=True,
+        help="UUID of the floor_maps row these anchor points belong to.",
+    )
+    parser.add_argument(
+        "--yaml",
+        required=True,
+        help="Path to a YAML file containing an anchor_points list.",
+    )
+    return parser.parse_args()
 
+
+def create_supabase_client_from_env() -> Client:
     load_dotenv()
 
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_ROLE")
 
-    supabase = create_client(url, key)
+    if not url or not key:
+        raise ValueError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE in .env")
 
-    floor_map_id = "PUT-YOUR-FLOOR-MAP-ID-HERE"
+    return create_client(url, key)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    supabase = create_supabase_client_from_env()
 
     result = upload_anchor_points(
-       supabase=supabase,
-       floor_map_id='7b9a6a09-ba54-4b15-a930-6742e8f1a544',
-       yaml_path="C:\\Users\\dhirp\\robot_backend\\AnchorP.yaml",
+        supabase=supabase,
+        floor_map_id=args.floor_map_id,
+        yaml_path=args.yaml,
     )
-    '''
-    resp = supabase.table("anchor_points").select("*").eq("id", "195e86f1-210f-4602-a412-7d0ba9d2ef1a").limit(1).execute()
-    if resp.data and len(resp.data) > 0:
-        row = resp.data[0]
-        print("Row:", row)
-    else:
-        print("No row found for id")
-    '''
     print("Inserted anchor points:", result)

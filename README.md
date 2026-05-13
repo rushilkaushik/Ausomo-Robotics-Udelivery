@@ -1,144 +1,179 @@
-# Ausomo-Robotics-UDelivery
+# CISC498 Ausomo Robotics UDelivery
 
-Indoor delivery robot for Ausomo Robotics made by gang
+This README describes the current `main` branch.
 
-## Project Overview
+`main` is the stable Supabase-backed web app branch. It does not include the ROS gateway code from `roslibjs`. The implemented pieces on this branch are:
 
-This project is an indoor delivery robot tracking platform developed for Ausomo Robotics. It provides a full-stack solution to manage, track, and interact with delivery robots operating inside buildings such as office complexes, hospitals, or university campuses.
+- the React/Vite web app in `apps/web`
+- Python scripts in `backend/` for uploading floor maps and anchor points into Supabase
 
-### Key Features
+Everything else in the repo should be treated as partial, placeholder, or future work unless documented otherwise.
 
-- **Real-Time Tracking:** Track delivery robots in real time via modern, easy-to-use web and mobile interfaces.
-- **Multi-Platform Apps:** User interfaces available for web (React/TypeScript), iOS, and Android, ensuring accessibility on any device.
-- **Backend Services:** Modular backend architecture supporting order management, robot fleet supervision, delivery status, and map data.
-- **Robot Integration:** ROS2-compatible robotics code for direct control and telemetry of the delivery robots, including simulation and navigation.
-- **Infrastructure as Code:** Deployment and orchestration using Docker Compose for easy setup and reproducible environments.
-- **Expandable Architecture:** Clean repo organization supporting rapid development and future extensibility for new delivery scenarios, buildings, or robot types.
+## Current Project State
 
-### Who Is This For?
+This branch supports a browser-based delivery workflow backed directly by Supabase:
 
-- **Facilities Managers** who need to supervise autonomous deliveries in large buildings.
-- **Developers/Researchers** interested in robotics, automation, or smart building services.
-- **End Users**—anyone expecting or sending parcels internally within a building.
+- users can sign in and view deliveries
+- admins can view building deliveries and robots
+- deliveries are created directly from the frontend into Supabase
+- floor maps and anchor points can be seeded through Python scripts in `backend/`
 
-### Technology Stack
-
-- **Frontend:** React, TypeScript, Tailwind CSS
-- **Backend:** Node.js, REST APIs, database integration
-- **Robotics:** ROS2 for robot-side code and simulation
-- **DevOps:** Docker Compose, shell scripts for streamlined deployment
-
-Learn more about project structure and setup in the sections below.
+There is no robot command bridge in `main`, no live ROS connection, and no maintained production deployment documented for this branch.
 
 ## Repository Layout
 
-- `apps/` – User-facing applications:
-  - `web/` – Web application frontend (React, TypeScript, Tailwind CSS)
-  - `ios/` – iOS mobile frontend
-  - `android/` – Android mobile frontend
-- `services/` – Backend services (REST APIs, workers, order management, map data handling)
-- `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
-- `infra/` – Infrastructure and configuration (environment variables, docker-compose files, deployment scripts)
+- `apps/web/`
+  Main application runtime. React + TypeScript + Vite frontend.
+- `backend/`
+  Python utilities for Supabase connection checks, floor-map upload, and anchor-point upload.
+- `infra/`
+  Contains the environment-variable example file used for handoff setup.
+- `robot/`
+  Placeholder only on this branch.
+- `services/`
+  Placeholder only on this branch.
+- `apps/ios/` and `apps/android/`
+  Placeholders only on this branch.
 
-## How to Run the Web App
+## Environment Setup
 
-1. **Clone the repository:**
+The example values live in `infra/.env.example`.
 
-   ```bash
-   git clone https://github.com/rushilkaushik/Ausomo-Robotics-UDelivery.git
-   cd Ausomo-Robotics-UDelivery
-   ```
+For a clean local setup, create:
 
-2. **Set up environment variables:**
+- a repo-root `.env` file for the backend scripts
+- `apps/web/.env.local` for the web app
 
-   Copy the example environment file:
+Example:
 
-   ```bash
-   cp infra/.env.example apps/web/.env.local
-   ```
+```bash
+cp infra/.env.example .env
+cp infra/.env.example apps/web/.env.local
+```
 
-   For the web app, the values used at runtime live in:
+### Variables used by the web app
 
-   ```bash
-   apps/web/.env.local
-   ```
+The frontend reads:
 
-   Update it with your Supabase credentials:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-   ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+The frontend code also accepts `VITE_SUPABASE_KEY` as a fallback if needed.
 
-   You can find these values in your [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API
+### Variables used by the backend scripts
 
-   The same example file also includes backend-only variables such as
-   `SUPABASE_SERVICE_ROLE` for the Python scripts in `backend/`, but those are not
-   required just to run the web app.
+The Python scripts read:
 
-3. **Install dependencies:**
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE`
+- `SUPABASE_BUCKET`
+
+Do not commit real secrets to the repository.
+
+## Run the Web App
+
+All commands below are run from the project root.
+
+1. Install frontend dependencies:
 
    ```bash
    npm run install:web
    ```
 
-4. **Run the development server:**
+2. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-   _Tip_: While the dev server is running, you can type `o` and hit Enter in the terminal to automatically open the web app in your browser.
-
-5. **Build for production:**
+3. Build and preview:
 
    ```bash
    npm run build
    npm run preview
    ```
 
-## Available Scripts
+### Root scripts
 
-All commands are run from the project root:
+`package.json` proxies into `apps/web`:
 
-| Command | Description |
-| ------- | ----------- |
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build locally |
-| `npm run install:web` | Install web app dependencies |
+- `npm run install:web`
+- `npm run dev`
+- `npm run build`
+- `npm run preview`
+- `npm run lint`
 
-## TODO
+## Run the Backend Tools
 
-### Live Tracking And Map UX
+The backend is not a long-running API service. It is a set of local utilities that prepare Supabase data for the frontend.
 
-- [ ] Show a live map preview while a delivery is running, including robot position, route progress, and current floor
-- [ ] Store and render floor map assets in a web-friendly format for previewing delivery progress on actual building maps
-- [ ] Add mobile-friendly live tracking views so users can follow a delivery from phone screens as easily as desktop
-- [ ] Add realtime subscriptions for robot and delivery updates so the web app refreshes automatically without manual reloads
+1. Create a virtual environment if desired:
 
-### Admin Dashboard And Delivery Actions
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
 
-- [ ] Add real functionality to the admin dashboard delivery management buttons such as assign robot, dispatch robot, cancel delivery, and update delivery state in Supabase
-- [ ] Improve robot fleet visibility in the admin dashboard with battery, last update time, active job, and error state indicators
-- [ ] Add delivery status history and timestamps so admins and users can see each stage from pending to delivered
+2. Install backend dependencies:
 
-### Robot Integration
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-- [ ] Connect app delivery destinations to robot navigation waypoints so a selected dropoff can become a robot navigation target
-- [ ] Add a robot command bridge or backend service that translates app actions into robot-side navigation commands
-- [ ] Add failure handling and recovery actions for stuck robots, failed deliveries, and manual intervention workflows
+3. Verify Supabase access:
 
-### Backend, Data, And Security
+   ```bash
+   python backend/Verify_Supa.py
+   ```
 
-- [ ] Add role-safe Supabase policies and validation for admin actions that affect robots and deliveries
-- [ ] Add backend script documentation and setup steps for uploading maps, anchor points, and other building metadata
+4. Upload a floor map:
 
----
+   ```bash
+   python backend/uploader.py \
+     --building-id <building-uuid> \
+     --floor-number 1 \
+     --file path/to/map.pcd \
+     --floor-name "Floor 1"
+   ```
 
-## Future Improvements
+5. Upload anchor points from YAML:
 
-- Automated deployment pipelines for rapid testing and delivery
-- Scalable microservices structure for increased robustness
-- Enhanced security across communications between all system parts
-- Mobile apps (iOS/Android) for on-the-go tracking
+   ```bash
+   python backend/anchor_point_uploader.py \
+     --floor-map-id <floor-map-uuid> \
+     --yaml backend/AnchorP.yaml
+   ```
+
+## Architecture Summary
+
+The actual runtime shape of `main` is:
+
+```text
+Frontend <-> Supabase
+Backend scripts -> Supabase
+Robot integration not connected
+```
+
+Important implications:
+
+- the frontend talks directly to Supabase for auth and app data
+- the Python scripts seed the `floor_maps` and `anchor_points` data used by the UI
+- no backend API service sits between the web app and the database
+- no robot-side execution path is implemented on this branch
+
+For more detail, see `SYSTEM_PIPELINE_OVERVIEW.md`.
+
+## Known Limitations
+
+- No ROS gateway or web-to-robot communication path exists on `main`
+- No maintained deployment target is documented for this branch
+- `robot/`, `services/`, `apps/ios/`, and `apps/android/` are not active runtime components
+- The frontend does not render uploaded `.pcd` files as a live map
+- Robot telemetry and delivery state changes are not streamed in real time from hardware
+
+## Recommended Next Steps
+
+- Keep `main` as the stable Supabase/web baseline
+- Use `roslibjs` as the starting point for finishing robot communication work
+- Validate the Python data-loading scripts against the current Supabase schema before further expansion
+- Decide whether future robot integration should merge into `main` or remain behind a separate service boundary
