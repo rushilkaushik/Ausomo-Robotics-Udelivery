@@ -60,7 +60,7 @@ If you see `Rosbridge connection closed, retrying in 3s...` — rosbridge is not
 
 ## Step 2 — Configure the Frontend
 
-Add these to `apps/web/.env`:
+Add these to `apps/web/.env.local`:
 
 ```env
 VITE_GATEWAY_URL=http://localhost:3001

@@ -12,6 +12,8 @@ It is not the same architecture as `main`.
 
 That distinction matters because the delivery pipeline on this branch can go through a Node gateway and rosbridge, which does not exist on `main`.
 
+This branch was kept separate because it was not fully validated against the physical robot before project closeout. The intended web-to-robot flow is implemented on the repository side, but final robot-network integration and real hardware testing remain handoff work for the next team.
+
 ## Current System State
 
 The implemented system on this branch has four practical pieces:
@@ -344,6 +346,10 @@ This repository defines the browser and gateway side of the integration. The ROS
 ### 6. Mobile and infra folders are not active system components
 
 `apps/ios/`, `apps/android/`, and `infra/` are placeholders on this branch and should not be documented as current runtime pieces.
+
+### 7. No maintained deployment target is documented
+
+This branch should be handed off as a local-development and integration branch. The repo documents how to run the frontend and gateway locally, but it does not define a maintained production deployment path.
 
 ## Practical Summary
 

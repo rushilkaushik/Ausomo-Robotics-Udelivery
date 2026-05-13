@@ -12,6 +12,10 @@ On `main`, the project is centered around a Supabase-backed web app plus Python 
 
 This branch is a web-first delivery control surface for Ausomo Robotics. Users can sign in, create deliveries, and follow delivery status from the browser. Admins can view building-level delivery and robot data. When the optional gateway is enabled, a delivery request is turned into a ROS task over rosbridge instead of being stored in Supabase only.
 
+The branch was created to establish a practical path from the web app to the robot and back again: frontend -> gateway -> rosbridge -> robot, with live status and pose updates returning to the browser.
+
+It remains a separate branch because the team did not complete end-to-end testing against the physical robot before the project ended. Late project time was spent on getting the robot to navigate autonomously, so this branch should be treated as a handoff prototype for finishing robot communication rather than a production-ready merge target.
+
 ## Current Capabilities
 
 - Supabase-backed authentication and profile loading
@@ -145,6 +149,7 @@ The gateway will:
 ## Important Notes
 
 - There is no root `package.json` on this branch. Run commands inside `apps/web` and `services/gateway`.
+- There is no documented deployment target for this branch. The supported handoff path is local setup and local testing.
 - The live map UI currently uses a placeholder SVG floor plan. It does not render real `.pcd` floor-map assets yet.
 - The robot integration contract is documented in [docs/gateway-integration.md](docs/gateway-integration.md), but the robot-side ROS node itself is expected to live outside this repository for now.
 - `robot/`, `infra/`, `apps/ios/`, and `apps/android/` are not active runtime components on this branch.
