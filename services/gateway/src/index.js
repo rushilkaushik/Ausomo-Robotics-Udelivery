@@ -76,10 +76,13 @@ app.post('/deliveries', async (req, res) => {
   }
 
   // 5. Send navigation goal to robot
-  // TODO: add multi-floor decomposition here by checking pickup.floor_map_id vs dropoff.floor_map_id
-  rosbridge.publishGoal(delivery.id, dropoff.x_position, dropoff.y_position)
+  rosbridge.publishDeliveryGoal(
+    delivery.id,
+    { x: pickup.x_position,  y: pickup.y_position  },
+    { x: dropoff.x_position, y: dropoff.y_position }
+  )
 
-  console.log(`Delivery ${delivery.id} created — goal sent to robot (${dropoff.x_position}, ${dropoff.y_position})`)
+  console.log(`Delivery ${delivery.id} created — goal sent to robot (pickup ${pickup.x_position},${pickup.y_position} → dropoff ${dropoff.x_position},${dropoff.y_position})`)
 
   res.json({ delivery_id: delivery.id })
 })

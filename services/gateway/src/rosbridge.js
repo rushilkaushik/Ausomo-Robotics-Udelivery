@@ -47,7 +47,9 @@ function connect() {
   })
 }
 
-function publishGoal(x, y) {
+// Publishes both pickup and dropoff coords plus the delivery_id so the robot
+// node knows the full task and can report status back.
+function publishDeliveryGoal(deliveryId, pickup, dropoff) {
   if (!ros) {
     console.warn('Cannot publish goal — not connected to rosbridge')
     return
@@ -55,16 +57,16 @@ function publishGoal(x, y) {
 
   const goalTopic = new ROSLIB.Topic({
     ros,
-    name: '/web_goal',
-    messageType: 'geometry_msgs/PoseStamped'
+    name: '/delivery_goal',
+    messageType: 'std_msgs/String'
   })
 
   goalTopic.publish(new ROSLIB.Message({
-    header: { frame_id: 'map' },
-    pose: {
-      position: { x, y, z: 0 },
-      orientation: { x: 0, y: 0, z: 0, w: 1 }
-    }
+    data: JSON.stringify({
+      delivery_id: deliveryId,
+      pickup:  { x: pickup.x,  y: pickup.y  },
+      dropoff: { x: dropoff.x, y: dropoff.y },
+    })
   }))
 }
 
@@ -78,4 +80,4 @@ function onDeliveryStatus(cb) {
   return () => deliveryStatusListeners.delete(cb)
 }
 
-module.exports = { connect, publishGoal, onPosition, onDeliveryStatus }
+module.exports = { connect, publishDeliveryGoal, onPosition, onDeliveryStatus }
