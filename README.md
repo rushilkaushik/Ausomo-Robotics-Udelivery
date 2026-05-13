@@ -1,93 +1,150 @@
-# CISC498-Ausomo-Robotics-UDelivery
+# CISC498 Ausomo Robotics UDelivery
 
-Indoor delivery robot for Ausomo Robotics made by gang
+This repository currently documents the `roslibjs` branch architecture, not the `main` branch.
 
-## Project Overview
+On `main`, the project is centered around a Supabase-backed web app plus Python data-loading scripts in `backend/`. On `roslibjs`, that Python backend is gone. In its place, this branch adds:
 
-This project is an indoor delivery robot tracking platform developed for Ausomo Robotics. It provides a full-stack solution to manage, track, and interact with delivery robots operating inside buildings such as office complexes, hospitals, or university campuses.
+- a ROS-aware React frontend in `apps/web`
+- a Node.js delivery gateway in `services/gateway`
+- a rosbridge-based path for dispatching deliveries to a robot and streaming live updates back to the browser
 
-### Key Features
+## Branch Overview
 
-- **Real-Time Tracking:** Track delivery robots in real time via modern, easy-to-use web and mobile interfaces.
-- **Multi-Platform Apps:** User interfaces available for web (React/TypeScript), iOS, and Android, ensuring accessibility on any device.
-- **Backend Services:** Modular backend architecture supporting order management, robot fleet supervision, delivery status, and map data.
-- **Robot Integration:** ROS2-compatible robotics code for direct control and telemetry of the delivery robots, including simulation and navigation.
-- **Infrastructure as Code:** Deployment and orchestration using Docker Compose for easy setup and reproducible environments.
-- **Expandable Architecture:** Clean repo organization supporting rapid development and future extensibility for new delivery scenarios, buildings, or robot types.
+This branch is a web-first delivery control surface for Ausomo Robotics. Users can sign in, create deliveries, and follow delivery status from the browser. Admins can view building-level delivery and robot data. When the optional gateway is enabled, a delivery request is turned into a ROS task over rosbridge instead of being stored in Supabase only.
 
-### Who Is This For?
+## Current Capabilities
 
-- **Facilities Managers** who need to supervise autonomous deliveries in large buildings.
-- **Developers/Researchers** interested in robotics, automation, or smart building services.
-- **End Users**—anyone expecting or sending parcels internally within a building.
+- Supabase-backed authentication and profile loading
+- Separate user and admin dashboards
+- Delivery creation using building floors and anchor points stored in Supabase
+- Optional gateway dispatch path that publishes `/delivery_goal` over rosbridge
+- Optional live WebSocket stream for robot pose and delivery status
+- Delivery history, status timeline, and robot/building enrichment in the UI
 
-### Technology Stack
+## Repository Layout
 
-- **Frontend:** React, TypeScript, Tailwind CSS
-- **Backend:** Node.js, REST APIs, database integration
-- **Robotics:** ROS2 for robot-side code and simulation
-- **DevOps:** Docker Compose, shell scripts for streamlined deployment
+- `apps/web/`
+  React + TypeScript + Vite frontend. This is the main user-facing application on this branch.
+- `services/gateway/`
+  Express + WebSocket gateway that validates Supabase JWTs, creates delivery rows, publishes ROS goals, and forwards robot updates to browser clients.
+- `docs/gateway-integration.md`
+  Robot-side integration guide for the rosbridge contract used by this branch.
+- `apps/ios/` and `apps/android/`
+  Placeholders only on this branch.
+- `robot/`
+  Placeholder only. The robot-side node described in `docs/gateway-integration.md` is not implemented in this repo.
+- `infra/`
+  Placeholder only on this branch.
 
-Learn more about project structure and setup in the sections below.
+## Runtime Architecture
 
-## Repository layout
+There are two supported delivery flows:
 
-- `apps/` – User-facing applications, including:
-  - `web/` – Web application frontend (React, TypeScript, components, styles)
-  - `ios/` – iOS mobile frontend
-  - `android/` – Android mobile frontend
-- `services/` – Backend services (REST APIs, workers, order management, map data handling)
-  - `gateway/` – Node.js gateway service; local runtime config lives in `services/gateway/.env` using `services/gateway/.env.example` as the template
-- `robot/` – Robot-side code (ROS2 nodes, robot simulation, navigation, map generation)
-- `infra/` – Infrastructure and orchestration setup (docker-compose files, deployment scripts, shared environment wiring)
+### 1. Frontend-only mode
 
-## How to Run the Web App
+If no gateway environment variables are configured in the web app:
 
-1. **Clone the repository:**
+- the browser talks directly to Supabase
+- creating a delivery inserts a row into `deliveries`
+- no ROS goal is published
+- live robot streaming stays unavailable
 
-   ```bash
-   git clone https://github.com/rushilkaushik/CISC498-Ausomo-Robotics.git
-   cd CISC498-Ausomo-Robotics
-   ```
+This is the fallback development mode.
 
-2. **Navigate to the web application directory:**
+### 2. Gateway + ROS mode
+
+If the gateway is running and the web app is configured to use it:
+
+```text
+Browser
+  -> Gateway HTTP POST /deliveries
+  -> Supabase insert
+  -> rosbridge publish /delivery_goal
+
+Robot node
+  -> rosbridge publish /delivery_status and /current_pose
+  -> Gateway WebSocket fan-out
+  -> Browser live updates
+```
+
+In this mode, the "Dispatch Robot" action creates the delivery and immediately tries to send the robot its pickup and dropoff coordinates.
+
+## Run the Web App
+
+All web commands are run from `apps/web`.
+
+1. Install dependencies:
 
    ```bash
    cd apps/web
-   ```
-
-3. **Install dependencies:**
-
-   ```bash
    npm install
    ```
 
-4. **Build the app:**
+2. Create `apps/web/.env.local`:
 
-   ```bash
-   npm run build
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_KEY=your-supabase-key
    ```
 
-5. **Preview the built app locally:**
+3. If you also want gateway mode, add:
 
-   ```bash
-   npm run preview
+   ```env
+   VITE_GATEWAY_URL=http://localhost:3001
+   VITE_GATEWAY_WS_URL=ws://localhost:3001
    ```
 
-   _or_, if you want to run the development server (with hot reload):
+4. Start the frontend:
 
    ```bash
    npm run dev
    ```
 
-   _Tip_: While the dev server is running, you can type `o` and hit Enter in the terminal to automatically open the web app in your browser.
+5. Build for production:
 
-## Plans
+   ```bash
+   npm run build
+   npm run preview
+   ```
 
-- **Database Connectivity**: Integrate backend services (`services/`) with a centralized database for storing building maps, tracking orders, robot state, and user information. This ensures real-time access and updates for the apps, as well as persistent storage.
-- **Robot Communication**: Enable backend services to establish reliable connections with robot units (via ROS2 APIs), to send commands and receive telemetry and status updates.
-- **Linking Everything Together**: Use `docker-compose` within the `infra/` directory to orchestrate all components (frontend, backend, robot simulators, and databases). This will streamline the process of running the entire system locally or in production, ensuring that all services can communicate seamlessly in a reproducible environment.
-- **Future improvements**:
-  - Automated deployment pipelines for rapid testing and delivery
-  - Scalable microservices structure for increased robustness
-  - Enhanced security across communications between all system parts
+## Run the Gateway
+
+All gateway commands are run from `services/gateway`.
+
+1. Install dependencies:
+
+   ```bash
+   cd services/gateway
+   npm install
+   ```
+
+2. Create `services/gateway/.env` from `services/gateway/.env.example`:
+
+   ```env
+   PORT=3001
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ROSBRIDGE_URL=ws://localhost:9090
+   ```
+
+3. Start the gateway:
+
+   ```bash
+   npm run dev
+   ```
+
+The gateway will:
+
+- validate the Supabase JWT sent by the frontend
+- fetch pickup and dropoff anchor-point coordinates
+- create the delivery row in Supabase
+- publish a JSON payload on `/delivery_goal`
+- subscribe to `/delivery_status` and `/current_pose`
+- forward live updates to browser clients over WebSocket
+
+## Important Notes
+
+- There is no root `package.json` on this branch. Run commands inside `apps/web` and `services/gateway`.
+- The live map UI currently uses a placeholder SVG floor plan. It does not render real `.pcd` floor-map assets yet.
+- The robot integration contract is documented in [docs/gateway-integration.md](docs/gateway-integration.md), but the robot-side ROS node itself is expected to live outside this repository for now.
+- `robot/`, `infra/`, `apps/ios/`, and `apps/android/` are not active runtime components on this branch.
